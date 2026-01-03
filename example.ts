@@ -11,10 +11,11 @@ import {
   zip,
   zipWith,
   panic,
+  pipe,
   type NonTruthy,
   type Option,
   type Result,
-} from ".";
+} from "./src";
 import { maybeEmpty, maybeFail, randomTrue } from "./utils";
 
 // println
@@ -247,3 +248,91 @@ const divide = (a: number, b: number) => {
 
 println("5 + 3 =", add(5, 3));
 println("10 / 2 =", divide(10, 2));
+
+// Pipe - Pipeline composition utility
+
+// Pipeline functions take Result and return Result
+const addPipe = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value + x) : res;
+
+const multiplyPipe = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value * x) : res;
+
+const subtractPipe = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value - x) : res;
+
+// Basic pipe with plain initial value
+const basicResult = await pipe(
+  5,
+  addPipe(3),
+  multiplyPipe(2),
+  subtractPipe(1),
+).run();
+if (basicResult.isOk) {
+  println("Basic pipe result:", basicResult.value); // (5 + 3) * 2 - 1 = 15
+}
+
+// Pipe with Option initial value
+const optionPipeResult = await pipe(
+  option(10),
+  addPipe(5),
+  multiplyPipe(3),
+).run();
+if (optionPipeResult.isOk) {
+  println("Option pipe result:", optionPipeResult.value); // (10 + 5) * 3 = 45
+}
+
+// Pipe with callbacks
+const callbackResult = await pipe(7, addPipe(3), multiplyPipe(2)).run({
+  onEach: ({ prevResult, currentFn, nextFn }) => {
+    println(
+      `  After ${currentFn}:`,
+      prevResult.isOk ? prevResult.value : "error",
+    );
+    if (nextFn) println(`  Next: ${nextFn}`);
+  },
+  onSuccess: (value) => println("Pipeline success:", value),
+});
+
+// Pipe with error handling
+const failingFn = () => (res: Result<number, string>) => {
+  if (res.isErr) return res;
+  if (res.value > 10) return Err("Value too large");
+  return Ok(res.value);
+};
+
+const errorResult = await pipe(15, failingFn(), addPipe(5)).run({
+  onError: (err) => println("Pipeline error:", err.message),
+  allowErrors: false,
+});
+
+if (errorResult.isErr) {
+  println("Error result type:", errorResult.type);
+}
+
+// Pipe with allowErrors: true (continues even on error)
+const continueOnError = await pipe(20, failingFn(), (res) => {
+  println("  Received in next fn:", res.type);
+  return res.isErr ? Ok(0) : res; // Recovery
+}).run({ allowErrors: true });
+println(
+  "Continue on error result:",
+  continueOnError.isOk ? continueOnError.value : "still error",
+);
+
+// Pipe with Atom initial value
+const atomResult = await pipe(atom("42"), (res) => {
+  if (res.isErr) return res;
+  const num = parseInt(String(res.value), 10);
+  return isNaN(num) ? Err("Not a number") : Ok(num);
+}).run();
+println(
+  "Atom pipe result:",
+  atomResult.isOk ? atomResult.value : atomResult.error,
+);
+
+// Match on pipe result
+match(basicResult, {
+  Ok: (v) => println("Match Ok:", v.value),
+  Err: (e) => println("Match Err:", e.error),
+});

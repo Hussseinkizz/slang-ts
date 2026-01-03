@@ -31,3 +31,7 @@ export { zip, zipWith, unzip } from "./zip";
 
 // SafeTry
 export { safeTry } from "./safe-try";
+
+// Pipe
+export { pipe } from "./pipe";
+export type { PipeFn, PipeEachContext, PipeRunOptions, Pipeline } from "./pipe";

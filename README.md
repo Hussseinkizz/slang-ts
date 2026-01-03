@@ -2,7 +2,7 @@
 
 Functional programming library for TypeScript.
 
-My experiment to learn more functional programming and other cool programming stuff from other languages as I try to implement them in TypeScript.
+A collection of functional programming utilities and other cool programming stuff from other languages such as rust implemented in TypeScript.
 
 ## Install
 
@@ -24,8 +24,7 @@ npm i slang-ts
 - [x] SafeTry
 - [x] Match
 - [x] MatchAll
-- [ ] Pipe
-- [x] SafeTry
+- [x] Pipe
 - [ ] Map
 - [x] To (converters, e.g. `userAtom.to('option')`)
 - [ ] Promises and async utilities
@@ -46,6 +45,11 @@ import { Ok, Err } from "slang-ts";
 
 // Or import multiple at once
 import { option, Ok, Err, atom, match } from "slang-ts";
+
+// Or import under namespace (not so performant)
+import * as slang from "slang-ts";
+
+slang.println("Hello world!");
 ```
 
 ### println
@@ -294,6 +298,39 @@ const arr2 = [4, 5, 6];
 const zipped = zip([arr1, arr2]);
 println(unzip(zipped));
 // [[1, 2, 3], [4, 5, 6]]
+```
+
+### Pipe
+
+Sequential function composition where each function receives a `Result` and returns a `Result`. Accepts plain values, Option, Result, or Atom as initial input.
+
+```ts
+import { pipe, Ok, Err, option, type Result } from "slang-ts";
+
+// Create pipeline functions
+const add = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value + x) : res;
+
+const multiply = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value * x) : res;
+
+// Basic usage
+const result = await pipe(5, add(3), multiply(2)).run();
+println("Result:", result.value); // 16
+
+// With Options as initial value
+const fromOption = await pipe(option(10), add(5)).run();
+println("From option:", fromOption.value); // 15
+
+// With callbacks and error handling
+const result = await pipe(5, add(3), multiply(2)).run({
+  onEach: ({ currentFn, prevResult }) => {
+    println("Executed:", currentFn);
+  },
+  onSuccess: (value) => println("Done:", value),
+  onError: (err) => println("Failed:", err.message),
+  allowErrors: false, // stops pipeline on first Err
+});
 ```
 
 ### SafeTry

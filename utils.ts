@@ -1,4 +1,4 @@
-import { Err, Ok, option, type NonTruthy, type Option, type Result } from ".";
+import { Err, Ok, option, type NonTruthy, type Option, type Result } from "./src";
 
 export function maybeFail(): Result<number, string> {
   if (Math.random() > 0.5) {
