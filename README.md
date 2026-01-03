@@ -298,26 +298,36 @@ println(unzip(zipped));
 
 ### SafeTry
 
-Wraps potentially error throwing functions in try-catch, and returns a predictable `{ result, error }`. And always needs to be awaited as its async.
+Wraps potentially throwing functions in try-catch, returning a `Result<T, string>`. Always needs to be awaited as its async.
 
 ```ts
 import { safeTry } from "slang-ts";
 
-const { result, error } = await safeTry(() => {
+const result = await safeTry(() => {
   if (denom === 0) throw new Error("Cannot divide by zero");
   return num / denom;
 });
 
+if (result.isOk) {
+  println("Result:", result.value);
+} else {
+  println("Error:", result.error);
+}
+
+// Async functions work the same way
 const data = await safeTry(async () => {
   const res = await fetch("/api/user");
   return res.json();
 });
 
-// Re-throw critical errors
+if (data.isOk) {
+  println("User:", data.value);
+}
+
+// Re-throw critical errors instead of capturing
 await safeTry(() => {
   throw new Error("Critical!");
 }, { throw: true });
-
 ```
 
 ### Panic

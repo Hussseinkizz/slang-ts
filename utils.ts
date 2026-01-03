@@ -1,10 +1,10 @@
 import { Err, Ok, option, type NonTruthy, type Option, type Result } from ".";
 
-export function maybeFail(): Result<number, { type: string; message: string }> {
+export function maybeFail(): Result<number, string> {
   if (Math.random() > 0.5) {
-    return Ok(42); // success
+    return Ok(42);
   } else {
-    return Err({ type: "auth", message: "Invalid credentials" }); // fail
+    return Err("Invalid credentials");
   }
 }
 

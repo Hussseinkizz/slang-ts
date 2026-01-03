@@ -219,62 +219,49 @@ export function Ok<T>(value: T): Ok<T> & ResultMethods<T> {
 }
 
 /**
- * Creates a new, failed result
- * @param error Error of the result
+ * Creates a new, failed result with a string error message.
+ * @param error Error message (must be a string)
  * @example
- * const a = Err("error");
- * typeof a; // Err<"error">
+ * const a = Err("something went wrong");
+ * typeof a; // Err<string>
  */
-/** Creates a new, failed result */
-export function Err<E>(error: E): Err<E> & ResultMethods<never> {
+export function Err(error: string): Err<string> & ResultMethods<never> {
   const err = Object.freeze({
     type: "Err",
     error,
     isOk: false,
     isErr: true,
-  } as Err<E>);
-  const formatError = (e: any, fallback?: string) => {
-    if (typeof e === "string") return e;
-    if (e && typeof e === "object" && "message" in e)
-      return String((e as any).message);
-    return fallback ?? String(e);
-  };
+  } as Err<string>);
   const withMethods = {
-    ...(err as Err<E>),
+    ...(err as Err<string>),
     /**
-     * Throws with the provided message or formatted error.
+     * Throws with the provided message or the error string.
      * @example
      * maybeFail().expect("must succeed"); // throws if Err
      */
     expect: ((msg?: string) => {
-      throw new Error(
-        msg ?? formatError((err as Err<E>).error, "Expected Ok, got Err"),
-      );
+      throw new Error(msg ?? error);
     }) as (msg?: string) => never,
     /** Chainable unwrap with microtask throw if not handled */
     unwrap: (() => {
       let handled = false;
       scheduleMicrotask(() => {
         if (!handled) {
-          const message = formatError(
-            (err as Err<E>).error,
-            "Expected Ok, got Err",
-          );
-          throw new Error(message);
+          throw new Error(error);
         }
       });
       return {
-        else<T>(fallback: T | ((error: E) => T)): T {
+        else<T>(fallback: T | ((error: string) => T)): T {
           handled = true;
           if (typeof fallback === "function") {
-            return (fallback as (error: E) => T)((err as Err<E>).error);
+            return (fallback as (error: string) => T)(error);
           }
           return fallback as T;
         },
       };
-    }) as () => { else<T>(fallback: T | ((error: E) => T)): T },
+    }) as () => { else<T>(fallback: T | ((error: string) => T)): T },
   };
-  return withMethods as Err<E> & ResultMethods<never>;
+  return withMethods as Err<string> & ResultMethods<never>;
 }
 
 declare const __option__: unique symbol;
@@ -644,14 +631,55 @@ export function unzip<T>(zipped: T[][]): T[][] {
   return result;
 }
 
+/** Type guard for Result */
+const isResult = (value: unknown): value is Result<unknown, unknown> =>
+  value != null &&
+  typeof value === "object" &&
+  "type" in value &&
+  (value.type === "Ok" || value.type === "Err");
+
+/** Type guard for Option */
+const isOption = (value: unknown): value is Option<unknown> =>
+  value != null &&
+  typeof value === "object" &&
+  "isSome" in value &&
+  "isNone" in value;
+
+/** Type guard for Atom (boxed symbol) */
+const isAtom = (value: unknown): boolean =>
+  value != null &&
+  typeof value === "object" &&
+  typeof (value as any).valueOf?.() === "symbol";
+
 /**
- * Result type for safeTry operation.
- * Contains either a successful result or an error.
+ * Evaluates and extracts inner value from Slang types.
+ * Internal utility used by safeTry.
  */
-export type SafeTryResult<T> = {
-  result: T | null;
-  error: Error | null;
-};
+function evaluateValue<T>(value: T): { ok: true; value: unknown } | { ok: false; error: string } {
+  if (isAtom(value)) {
+    const sym = (value as any).valueOf() as symbol;
+    return { ok: true, value: sym.description };
+  }
+
+  if (isResult(value)) {
+    if (value.isOk) {
+      return { ok: true, value: (value as any).value };
+    }
+    const errMsg = typeof (value as any).error === "string"
+      ? (value as any).error
+      : String((value as any).error);
+    return { ok: false, error: errMsg };
+  }
+
+  if (isOption(value)) {
+    if (value.isSome) {
+      return { ok: true, value: (value as any).value };
+    }
+    return { ok: false, error: "Option was None" };
+  }
+
+  return { ok: true, value };
+}
 
 /**
  * Options for safeTry behavior.
@@ -662,45 +690,47 @@ type SafeTryOptions = {
 };
 
 /**
- * Wraps a function in try-catch, returns `{ result, error }`.
- * - Always returns a Promise, internally awaits the function.
- * - Use `{ throw: true }` to re-throw errors.
+ * Wraps a function in try-catch, returns `Result<T, string>`.
+ * - Always returns a Promise resolving to Ok or Err.
+ * - Internally evaluates return values from Atom, Result, or Option types.
+ * - Use `{ throw: true }` to re-throw errors instead of capturing.
  *
- * @param fn - Function to execute
+ * @param fn - Function to execute (sync or async)
  * @param options - `{ throw?: boolean }`
- * @returns Promise of `{ result, error }`
+ * @returns Promise of `Result<T, string>`
  *
  * @example
- * const { result, error } = await safeTry(() => "Hello");
+ * const result = await safeTry(() => "Hello");
+ * if (result.isOk) println(result.value);
  *
  * @example
- * const { result, error } = await safeTry(() => {
+ * const result = await safeTry(() => {
  *   throw new Error("Oops!");
  * });
- *
- * @example
- * await safeTry(() => { throw new Error("Fail"); }, { throw: true });
+ * if (result.isErr) println(result.error);
  */
 export async function safeTry<T>(
   fn: () => T | Promise<T>,
   options?: SafeTryOptions,
-): Promise<SafeTryResult<T>> {
+): Promise<Result<T, string>> {
   const shouldThrow = options?.throw ?? false;
 
   try {
-    const result = await fn();
-    return {
-      result,
-      error: null,
-    };
-  } catch (error) {
-    if (shouldThrow) {
-      throw error instanceof Error ? error : new Error(String(error));
+    const rawResult = await fn();
+    const evaluated = evaluateValue(rawResult);
+
+    if (evaluated.ok) {
+      return Ok(evaluated.value as T);
     }
-    return {
-      result: null,
-      error: error instanceof Error ? error : new Error(String(error)),
-    };
+    return Err(evaluated.error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (shouldThrow) {
+      throw error instanceof Error ? error : new Error(errorMessage);
+    }
+
+    return Err(errorMessage);
   }
 }
 

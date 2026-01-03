@@ -36,12 +36,12 @@ describe("match", () => {
     });
 
     it("provides correctly typed error in Err handler", () => {
-      const result = Err({ code: 404, message: "Not found" });
+      const result = Err("Not found: code 404");
       match(result, {
         Ok: () => "ok",
         Err: (e) => {
           expect(e.type).toBe("Err");
-          expect(e.error).toEqual({ code: 404, message: "Not found" });
+          expect(e.error).toBe("Not found: code 404");
           expect(e.isErr).toBe(true);
           return "err";
         },

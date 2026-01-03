@@ -10,6 +10,7 @@ import {
   unzip,
   zip,
   zipWith,
+  panic,
   type NonTruthy,
   type Option,
   type Result,
@@ -42,7 +43,7 @@ println(result.type); // "Ok" or "Err"
 if (result.isOk) {
   println("Success! Value is:", result.value);
 } else {
-  println("Failure! Reason:", result.error.type, result.error.message);
+  println("Failure! Reason:", result.error);
 }
 
 // Option
@@ -69,7 +70,7 @@ println("option e", e.type);
 const failMaybe = maybeFail();
 match(failMaybe, {
   Ok: (v) => println("ok:", v.value),
-  Err: (e) => println("failed:", e.error.message),
+  Err: (e) => println("failed:", e.error),
 });
 
 const emptyMaybe = maybeEmpty();
@@ -182,10 +183,12 @@ println(unzip(zipped));
 // [[1,2,3],[4,5,6]]
 
 // SafeTry
-println("\n=== SafeTry Examples ===");
 const greetResult = await safeTry(() => "Hello, Slang!");
-println("Result:", greetResult.result);
-println("Error:", greetResult.error);
+if (greetResult.isOk) {
+  println("Result:", greetResult.value);
+} else {
+  println("Error:", greetResult.error);
+}
 
 const divideResult = await safeTry(() => {
   const num = 10;
@@ -193,27 +196,37 @@ const divideResult = await safeTry(() => {
   if (denom === 0) throw new Error("Cannot divide by zero");
   return num / denom;
 });
-println("Divide Result:", divideResult.result);
-println("Divide Error:", divideResult.error?.message);
+if (divideResult.isOk) {
+  println("Divide Result:", divideResult.value);
+} else {
+  println("Divide Error:", divideResult.error);
+}
 
 async function fetchUserData() {
   return { id: 1, name: "Kizz", role: "Developer" };
 }
 
 const asyncResult = await safeTry(fetchUserData);
-println("Async Result:", asyncResult.result);
+if (asyncResult.isOk) {
+  println("Async Result:", asyncResult.value);
+}
 
 async function fetchFailingData() {
   throw new Error("Network timeout");
 }
 
 const asyncErrorResult = await safeTry(fetchFailingData);
-println("Async Error:", asyncErrorResult.error?.message);
+if (asyncErrorResult.isErr) {
+  println("Async Error:", asyncErrorResult.error);
+}
 
 try {
-  await safeTry(() => {
-    throw new Error("Critical failure!");
-  }, { throw: true });
+  await safeTry(
+    () => {
+      throw new Error("Critical failure!");
+    },
+    { throw: true },
+  );
 } catch (e) {
   println("Caught:", (e as Error).message);
 }
@@ -223,5 +236,14 @@ const configValue = await safeTry(() => {
   return config.port;
 });
 
-const port = configValue.result ?? 8080;
+const port = configValue.isOk ? configValue.value : 8080;
 println("Using port:", port);
+
+const add = (a: number, b: number) => a + b;
+const divide = (a: number, b: number) => {
+  if (b === 0) panic("Cannot divide by zero");
+  return a / b;
+};
+
+println("5 + 3 =", add(5, 3));
+println("10 / 2 =", divide(10, 2));

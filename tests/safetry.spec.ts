@@ -1,85 +1,95 @@
 import { describe, expect, it } from "vitest";
-import { safeTry } from "../index";
+import { safeTry, Ok, Err, option, atom } from "../index";
 
 describe("safeTry", () => {
   describe("synchronous functions", () => {
-    it("returns result on success", async () => {
-      const { result, error } = await safeTry(() => {
-        return "success";
-      });
+    it("returns Ok on success", async () => {
+      const result = await safeTry(() => "success");
 
-      expect(result).toBe("success");
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      expect(result.isErr).toBe(false);
+      if (result.isOk) {
+        expect(result.value).toBe("success");
+      }
     });
 
-    it("captures error on failure", async () => {
-      const { result, error } = await safeTry(() => {
+    it("returns Err on failure", async () => {
+      const result = await safeTry(() => {
         throw new Error("sync error");
       });
 
-      expect(result).toBeNull();
-      expect(error).toBeInstanceOf(Error);
-      expect(error?.message).toBe("sync error");
+      expect(result.isOk).toBe(false);
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("sync error");
+      }
     });
 
-    it("returns result with complex types", async () => {
-      const { result, error } = await safeTry(() => {
+    it("returns Ok with complex types", async () => {
+      const result = await safeTry(() => {
         return { id: 1, name: "test" };
       });
 
-      expect(result).toEqual({ id: 1, name: "test" });
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toEqual({ id: 1, name: "test" });
+      }
     });
 
-    it("converts non-Error to Error", async () => {
-      const { result, error } = await safeTry(() => {
+    it("converts non-Error throws to Err with string message", async () => {
+      const result = await safeTry(() => {
         throw "string error";
       });
 
-      expect(result).toBeNull();
-      expect(error).toBeInstanceOf(Error);
-      expect(error?.message).toBe("string error");
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("string error");
+      }
     });
   });
 
   describe("asynchronous functions", () => {
-    it("returns result on async success", async () => {
-      const { result, error } = await safeTry(async () => {
-        return "async success";
-      });
+    it("returns Ok on async success", async () => {
+      const result = await safeTry(async () => "async success");
 
-      expect(result).toBe("async success");
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe("async success");
+      }
     });
 
-    it("captures error on async failure", async () => {
-      const { result, error } = await safeTry(async () => {
+    it("returns Err on async failure", async () => {
+      const result = await safeTry(async () => {
         throw new Error("async error");
       });
 
-      expect(result).toBeNull();
-      expect(error).toBeInstanceOf(Error);
-      expect(error?.message).toBe("async error");
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("async error");
+      }
     });
 
     it("handles async operations", async () => {
-      const { result, error } = await safeTry(async () => {
+      const result = await safeTry(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return "delayed";
       });
 
-      expect(result).toBe("delayed");
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe("delayed");
+      }
     });
 
-    it("converts non-Error async throws to Error", async () => {
-      const { result, error } = await safeTry(async () => {
+    it("converts non-Error async throws to Err", async () => {
+      const result = await safeTry(async () => {
         throw { custom: "object" };
       });
 
-      expect(result).toBeNull();
-      expect(error).toBeInstanceOf(Error);
-      expect(error?.message).toBe("[object Object]");
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("[object Object]");
+      }
     });
   });
 
@@ -100,69 +110,144 @@ describe("safeTry", () => {
       ).rejects.toThrow("async should throw");
     });
 
-    it("does not throw when throw is false", async () => {
-      const { result, error } = await safeTry(() => {
+    it("returns Err when throw is false", async () => {
+      const result = await safeTry(() => {
         throw new Error("captured");
       }, { throw: false });
 
-      expect(result).toBeNull();
-      expect(error?.message).toBe("captured");
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("captured");
+      }
     });
 
-    it("does not throw by default", async () => {
-      const { result, error } = await safeTry(() => {
+    it("returns Err by default (throw: false)", async () => {
+      const result = await safeTry(() => {
         throw new Error("default captured");
       });
 
-      expect(result).toBeNull();
-      expect(error?.message).toBe("default captured");
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("default captured");
+      }
     });
   });
 
   describe("edge cases", () => {
     it("handles null return value", async () => {
-      const { result, error } = await safeTry(() => {
-        return null;
-      });
+      const result = await safeTry(() => null);
 
-      expect(result).toBeNull();
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBeNull();
+      }
     });
 
     it("handles undefined return value", async () => {
-      const { result, error } = await safeTry(() => {
-        return undefined;
-      });
+      const result = await safeTry(() => undefined);
 
-      expect(result).toBeUndefined();
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBeUndefined();
+      }
     });
 
     it("handles 0 return value", async () => {
-      const { result, error } = await safeTry(() => {
-        return 0;
-      });
+      const result = await safeTry(() => 0);
 
-      expect(result).toBe(0);
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe(0);
+      }
     });
 
     it("handles false return value", async () => {
-      const { result, error } = await safeTry(() => {
-        return false;
-      });
+      const result = await safeTry(() => false);
 
-      expect(result).toBe(false);
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe(false);
+      }
     });
 
     it("handles empty string return value", async () => {
-      const { result, error } = await safeTry(() => {
-        return "";
+      const result = await safeTry(() => "");
+
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe("");
+      }
+    });
+  });
+
+  describe("value evaluation (Atom, Result, Option)", () => {
+    it("evaluates Ok Result and extracts value", async () => {
+      const result = await safeTry(() => Ok(42));
+
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe(42);
+      }
+    });
+
+    it("evaluates Err Result and returns Err", async () => {
+      const result = await safeTry(() => Err("something failed"));
+
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("something failed");
+      }
+    });
+
+    it("evaluates Some Option and extracts value", async () => {
+      const result = await safeTry(() => option("hello"));
+
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe("hello");
+      }
+    });
+
+    it("evaluates None Option and returns Err", async () => {
+      const result = await safeTry(() => option(null));
+
+      expect(result.isErr).toBe(true);
+      if (result.isErr) {
+        expect(result.error).toBe("Option was None");
+      }
+    });
+
+    it("evaluates Atom and extracts description", async () => {
+      const result = await safeTry(() => atom("ready"));
+
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe("ready");
+      }
+    });
+
+    it("evaluates async functions returning Result", async () => {
+      const result = await safeTry(async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        return Ok({ name: "test" });
       });
 
-      expect(result).toBe("");
-      expect(error).toBeNull();
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toEqual({ name: "test" });
+      }
+    });
+
+    it("evaluates async functions returning Option", async () => {
+      const result = await safeTry(async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        return option(100);
+      });
+
+      expect(result.isOk).toBe(true);
+      if (result.isOk) {
+        expect(result.value).toBe(100);
+      }
     });
   });
 });

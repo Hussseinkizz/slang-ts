@@ -40,18 +40,16 @@ describe("Result", () => {
       expect(result.error).toBe("something went wrong");
     });
 
-    it("creates Err with error object", () => {
-      const error = { type: "auth", message: "Invalid credentials" };
-      const result = Err(error);
+    it("creates Err with detailed string message", () => {
+      const result = Err("auth: Invalid credentials");
       expect(result.isErr).toBe(true);
-      expect(result.error).toEqual(error);
+      expect(result.error).toBe("auth: Invalid credentials");
     });
 
-    it("creates Err with Error instance", () => {
-      const error = new Error("test error");
-      const result = Err(error);
+    it("creates Err with formatted error message", () => {
+      const result = Err("Error: test error");
       expect(result.isErr).toBe(true);
-      expect(result.error).toBe(error);
+      expect(result.error).toBe("Error: test error");
     });
   });
 
@@ -72,14 +70,14 @@ describe("Result", () => {
       expect(() => result.expect("must succeed")).toThrow("must succeed");
     });
 
-    it("throws with error message from object", () => {
-      const result = Err({ message: "validation failed" });
+    it("throws with error message string", () => {
+      const result = Err("validation failed");
       expect(() => result.expect()).toThrow("validation failed");
     });
 
-    it("throws with error message from Error instance", () => {
-      const result = Err(new Error("something broke"));
-      expect(() => result.expect()).toThrow("something broke");
+    it("throws with custom message when provided", () => {
+      const result = Err("something broke");
+      expect(() => result.expect("custom: operation failed")).toThrow("custom: operation failed");
     });
   });
 
@@ -116,15 +114,15 @@ describe("Result", () => {
         expect(value).toBe("recovered");
       });
 
-      it("passes error object to else function", () => {
-        const errorObj = { type: "validation", message: "invalid input" };
-        const result: Result<string, typeof errorObj> = Err(errorObj);
+      it("passes error string to else function", () => {
+        const errorMsg = "validation: invalid input";
+        const result: Result<string, string> = Err(errorMsg);
         let capturedError: any;
         const value = result.unwrap().else((err) => {
           capturedError = err;
           return "default";
         });
-        expect(capturedError).toEqual(errorObj);
+        expect(capturedError).toBe(errorMsg);
         expect(value).toBe("default");
       });
 
