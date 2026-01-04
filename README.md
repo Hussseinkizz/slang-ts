@@ -25,16 +25,14 @@ npm i slang-ts
 - [x] Match
 - [x] MatchAll
 - [x] Pipe
-- [ ] Map
 - [x] To (converters, e.g. `userAtom.to('option')`)
-- [ ] Promises and async utilities
-- [ ] Currys
 
 All utilities fully tested, See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
 ## Others (Planned)
 
 - Pubsub store with state locks
+- Promises and async utilities
 
 ## How It Works
 
