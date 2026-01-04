@@ -42,6 +42,18 @@ export interface ResultMethods<T> {
      */
     else(fallback: T | ((error: any) => T)): T;
   };
+  /**
+   * Transforms the inner value if `Ok`, returns same `Err` if `Err`.
+   * - If fn returns `undefined`, returns original Result (no new allocation).
+   * - If fn throws, returns `Err(message)`.
+   * - Supports async functions, returning `Promise<Result<U, string>>`.
+   * @example
+   * Ok(5).andThen(x => x * 2);             // Ok(10)
+   * Err("fail").andThen(x => x * 2);       // Err("fail")
+   * Ok(5).andThen(x => undefined);         // Ok(5) - original
+   * await Ok(5).andThen(async x => x);     // Ok(5)
+   */
+  andThen<U>(fn: (value: T) => U | Promise<U>): Result<U, string> | Promise<Result<U, string>>;
 }
 
 /**
@@ -59,6 +71,34 @@ export function Ok<T>(value: T): Ok<T> & ResultMethods<T> {
     isErr: false,
   } as Ok<T>);
 
+  const andThen = <U>(
+    fn: (value: T) => U | Promise<U>,
+  ): Result<U, string> | Promise<Result<U, string>> => {
+    try {
+      const result = fn((ok as Ok<T>).value);
+
+      // Handle async
+      if (result instanceof Promise) {
+        return result
+          .then((resolved) => {
+            if (resolved === undefined) return withMethods as unknown as Result<U, string>;
+            return Ok(resolved) as Result<U, string>;
+          })
+          .catch((error) => {
+            const message = error instanceof Error ? error.message : String(error);
+            return Err(message) as Result<U, string>;
+          });
+      }
+
+      // Sync: undefined means return original
+      if (result === undefined) return withMethods as unknown as Result<U, string>;
+      return Ok(result) as Result<U, string>;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return Err(message) as Result<U, string>;
+    }
+  };
+
   const withMethods = {
     ...(ok as Ok<T>),
     expect: ((msg?: string) => (ok as Ok<T>).value) as (msg?: string) => T,
@@ -74,6 +114,7 @@ export function Ok<T>(value: T): Ok<T> & ResultMethods<T> {
         },
       };
     }) as () => { else(fallback: T | (() => T)): T },
+    andThen,
   };
 
   return withMethods as Ok<T> & ResultMethods<T>;
@@ -93,6 +134,13 @@ export function Err(error: string): Err<string> & ResultMethods<never> {
     isOk: false,
     isErr: true,
   } as Err<string>);
+
+  // Err.andThen skips fn, returns same instance
+  const andThen = <U>(
+    _fn: (value: never) => U | Promise<U>,
+  ): Result<U, string> | Promise<Result<U, string>> => {
+    return withMethods as unknown as Result<U, string>;
+  };
 
   const withMethods = {
     ...(err as Err<string>),
@@ -116,6 +164,7 @@ export function Err(error: string): Err<string> & ResultMethods<never> {
         },
       };
     }) as () => { else<T>(fallback: T | ((error: string) => T)): T },
+    andThen,
   };
 
   return withMethods as Err<string> & ResultMethods<never>;

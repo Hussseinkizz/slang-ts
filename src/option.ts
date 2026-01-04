@@ -58,6 +58,18 @@ export interface OptionMethods<T> {
      */
     else(fallback: T | ((value: T | undefined) => T)): T;
   };
+  /**
+   * Transforms the inner value if `Some`, returns `None` if `None`.
+   * - If fn returns `undefined`, returns original Option (no new allocation).
+   * - If fn throws, returns `None`.
+   * - Supports async functions, returning `Promise<Option<U>>`.
+   * @example
+   * option(5).andThen(x => x * 2);           // Some(10)
+   * option(null).andThen(x => x * 2);        // None
+   * option(5).andThen(x => undefined);       // Some(5) - original
+   * await option(5).andThen(async x => x);   // Some(5)
+   */
+  andThen<U>(fn: (value: T) => U | Promise<U>): Option<U> | Promise<Option<U>>;
 }
 
 /**
@@ -167,11 +179,45 @@ export function option<T>(value: T | NonTruthy): Option<T> & OptionMethods<T> {
     };
   }) as any;
 
+  const andThen: OptionMethods<T>["andThen"] = (<U>(
+    fn: (value: T) => U | Promise<U>,
+  ): Option<U> | Promise<Option<U>> => {
+    const currentOption = opt as Option<T>;
+
+    // None case: skip fn, return same instance
+    if (currentOption.isNone) {
+      return withMethods as unknown as Option<U>;
+    }
+
+    const currentValue = (currentOption as Some<T>).value;
+
+    try {
+      const result = fn(currentValue);
+
+      // Handle async
+      if (result instanceof Promise) {
+        return result
+          .then((resolved) => {
+            if (resolved === undefined) return withMethods as unknown as Option<U>;
+            return option(resolved) as Option<U>;
+          })
+          .catch(() => option(null as NonTruthy) as Option<U>);
+      }
+
+      // Sync: undefined means return original
+      if (result === undefined) return withMethods as unknown as Option<U>;
+      return option(result) as Option<U>;
+    } catch {
+      return option(null as NonTruthy) as Option<U>;
+    }
+  }) as any;
+
   const withMethods = {
     ...(opt as Option<T>),
     to,
     expect,
     unwrap,
+    andThen,
   };
 
   return withMethods as Option<T> & OptionMethods<T>;

@@ -14,7 +14,7 @@ npm i slang-ts
 
 - [x] Result (Ok, Err)
 - [x] Maybe (Option)
-- [ ] andThen
+- [x] andThen
 - [x] Atom
 - [x] Expect
 - [x] Unwrap (on Option)
@@ -29,6 +29,8 @@ npm i slang-ts
 - [x] To (converters, e.g. `userAtom.to('option')`)
 - [ ] Promises and async utilities
 - [ ] Currys
+
+All utilities fully tested, See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
 ## Others (Planned)
 
@@ -237,6 +239,50 @@ println("Atom:", stateOption.description); // "ready"
 
 const errResult = option(null).to("result");
 println("Result:", errResult.type);        // "Err"
+```
+
+### andThen
+
+Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. Returns original instance if provided transformation function returns `undefined`.
+
+```ts
+// Option - transforms Some, skips None
+option(5).andThen(x => x * 2);              // Some(10)
+option(null).andThen(x => x * 2);           // None (skipped)
+option(5).andThen(() => undefined);         // Some(5) - original
+
+// Result - transforms Ok, skips Err
+Ok(10).andThen(x => x + 5);                 // Ok(15)
+Err("fail").andThen(x => x + 5);            // Err("fail") (skipped)
+
+// Atom - transforms description (sync only)
+atom("hello").andThen(s => s.toUpperCase()); // Atom("HELLO")
+
+// Chained andThen - multiple transformations
+option(5)
+  .andThen(x => x + 1)
+  .andThen(x => x * 2)
+  .andThen(x => x.toString());              // Some("12")
+
+Ok(10)
+  .andThen(x => x * 2)
+  .andThen(x => x + 5)
+  .andThen(x => ({ value: x }));            // Ok({ value: 25 })
+
+atom("hello")
+  .andThen(s => s.toUpperCase())
+  .andThen(s => s + "!");                   // Atom("HELLO!")
+
+// Async support for Option and Result
+const data = await option(5).andThen(async x => await fetchData(x));
+
+// Error handling
+option(5).andThen(() => { throw "oops" });  // None (caught)
+Ok(5).andThen(() => { throw "oops" });      // Err("oops")
+atom("x").andThen(() => { throw "oops" });  // Panics!
+
+// Type transformation
+option(42).andThen(x => x.toString());      // Some("42")
 ```
 
 ### Zip

@@ -1,5 +1,6 @@
 import type { Option } from "./option";
 import type { Result } from "./result";
+import { panic } from "./panic";
 
 /** Unique symbol to brand atoms */
 declare const __atom__: unique symbol;
@@ -23,6 +24,17 @@ export interface AtomMethods<T extends string> {
    * @example atom("ready").to("result") // Ok("ready")
    */
   to(target: "result"): Result<string, string>;
+  /**
+   * Transforms the atom description, returns new Atom.
+   * - If fn returns `undefined`, returns original Atom (no new allocation).
+   * - If fn returns non-string, panics.
+   * - If fn throws, panics.
+   * - Sync only (no async support for Atom).
+   * @example
+   * atom("hello").andThen(s => s.toUpperCase());  // Atom("HELLO")
+   * atom("test").andThen(s => undefined);         // Atom("test") - original
+   */
+  andThen<U extends string>(fn: (value: T) => U | undefined): Atom<U> & AtomMethods<U>;
 }
 
 /** Lazy import to avoid circular dependency */
@@ -55,6 +67,30 @@ export function atom<const T extends string>(name: T): Atom<T> & AtomMethods<T> 
     return _toFn(s, target);
   }) as any;
 
+  const andThen = <U extends string>(
+    fn: (value: T) => U | undefined,
+  ): Atom<U> & AtomMethods<U> => {
+    let result: U | undefined;
+
+    try {
+      result = fn(name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      panic(`Atom.andThen: fn threw an error: ${message}`);
+    }
+
+    // undefined means return original
+    if (result === undefined) return boxed as unknown as Atom<U> & AtomMethods<U>;
+
+    // Must be string
+    if (typeof result !== "string") {
+      panic(`Atom.andThen: fn must return a string, got ${typeof result}`);
+    }
+
+    return atom(result) as Atom<U> & AtomMethods<U>;
+  };
+
   boxed.to = to;
+  boxed.andThen = andThen;
   return boxed as Atom<T> & AtomMethods<T>;
 }

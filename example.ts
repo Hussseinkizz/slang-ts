@@ -336,3 +336,49 @@ match(basicResult, {
   Ok: (v) => println("Match Ok:", v.value),
   Err: (e) => println("Match Err:", e.error),
 });
+
+// andThen - chainable transformations
+
+// Option andThen - single transform
+const optionSingle = option(5).andThen((x) => x * 2) as any;
+println("Option single andThen:", optionSingle.value); // 10
+
+// Option andThen - chained (cast intermediate results)
+const optStep1 = option(5).andThen((x) => x + 1) as any;
+const optStep2 = optStep1.andThen((x: number) => x * 2) as any;
+const optStep3 = optStep2.andThen((x: number) => x.toString()) as any;
+println("Option chain result:", optStep3.value); // "12"
+
+// None skips all transformations
+const noneAndThen = option(null).andThen(() => 999) as any;
+println("None andThen:", noneAndThen.type); // "None"
+
+// Result andThen - single transform
+const resultSingle = Ok(10).andThen((x) => x * 2) as any;
+println("Result single andThen:", resultSingle.value); // 20
+
+// Result andThen - chained
+const resStep1 = Ok(10).andThen((x) => x * 2) as any;
+const resStep2 = resStep1.andThen((x: number) => x + 5) as any;
+const resStep3 = resStep2.andThen((x: number) => ({ value: x })) as any;
+println("Result chain:", resStep3.value); // { value: 25 }
+
+// Err skips all transformations
+const errAndThen = Err("initial error").andThen((x) => x) as any;
+println("Err andThen:", errAndThen.error); // "initial error"
+
+// Atom andThen - chained
+const atomChain = atom("hello")
+  .andThen((s) => s.toUpperCase())
+  .andThen((s) => s + "!");
+println("Atom chain:", atomChain.description); // "HELLO!"
+
+// andThen with side effects (undefined return keeps original)
+const sideEffect = option(42).andThen((x) => {
+  println("  Side effect, value is:", x);
+}) as any;
+println("After side effect:", sideEffect.value); // 42
+
+// Async andThen
+const asyncAndThen = (await option(5).andThen(async (x) => x * 10)) as any;
+println("Async andThen result:", asyncAndThen.value); // 50
