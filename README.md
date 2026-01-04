@@ -152,48 +152,52 @@ if (userAtom === user2Atom) {
 
 ### Match
 
-Exhaustive pattern matching for `Option` and `Result` types. Forces you to handle all cases.
+Exhaustive pattern matching for `Option` and `Result` types. Forces you to handle all cases. Returns the value from the matched handler.
 
 ```ts
 import { match } from "slang-ts";
 
-// Matching Results
+// Matching Results - returns handler result
 const result = divide(10, 0);
-match(result, {
-  Ok: (v) => println("Success:", v.value),
-  Err: (e) => println("Failed:", e.error),
+const message = match(result, {
+  Ok: (v) => `Success: ${v.value}`,
+  Err: (e) => `Failed: ${e.error}`,
 });
+println(message); // "Failed: Cannot divide by zero"
 
-// Matching Options
+// Matching Options - returns handler result
 const maybePort = option(process.env.PORT);
-match(maybePort, {
-  Some: (v) => println("Port:", v.value),
-  None: () => println("No port configured"),
+const port = match(maybePort, {
+  Some: (v) => parseInt(v.value),
+  None: () => 3000,
 });
+println("Using port:", port); // Uses parsed port or default 3000
 ```
 
 ### MatchAll
 
-Pattern matching for primitives and atoms with required `_` fallback.
+Pattern matching for primitives and atoms with required `_` fallback. Returns the value from the matched handler.
 
 ```ts
 import { matchAll } from "slang-ts";
 
-// Match atoms
+// Match atoms - returns handler result
 const ready = atom("ready");
-matchAll(ready, {
-  ready: () => println("Ready!"),
-  failed: () => println("Failed!"),
-  _: () => println("Unknown"),
+const status = matchAll(ready, {
+  ready: () => "System is ready",
+  failed: () => "System failed",
+  _: () => "Unknown state",
 });
+println(status); // "System is ready"
 
-// Match booleans
+// Match booleans - returns handler result
 const isActive = true;
-matchAll(isActive, {
-  true: () => println("Active"),
-  false: () => println("Inactive"),
-  _: () => println("Unknown"),
+const label = matchAll(isActive, {
+  true: () => "Active",
+  false: () => "Inactive",
+  _: () => "Unknown",
 });
+println(label); // "Active"
 ```
 
 ### Expect
