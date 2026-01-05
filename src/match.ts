@@ -44,9 +44,17 @@ type MatchKey = string | number | symbol;
 /**
  * Type-safe pattern object: must always have `_` fallback.
  */
-type MatchPatterns<V, R> = {
-  [K in MatchKey]?: (v: V) => R;
-} & { _: () => R };
+type MatchPatterns<V> = {
+  [K in MatchKey]?: (v: V) => unknown;
+} & { _: () => unknown };
+
+/**
+ * Extracts return types from all handlers in a patterns object as a union.
+ * Allows each arm to return a different type.
+ */
+type InferReturnTypes<P> = {
+  [K in keyof P]: P[K] extends (...args: any[]) => infer R ? R : never;
+}[keyof P];
 
 const runtimeMatchKeyCheck = (key: any): key is MatchKey => {
   return (
@@ -76,10 +84,10 @@ const runtimeMatchKeyCheck = (key: any): key is MatchKey => {
  *   _: () => println("Unknown!"),
  * });
  */
-export function matchAll<T extends MatchKey | boolean, R>(
-  value: T,
-  patterns: MatchPatterns<T, R>,
-): R {
+export function matchAll<
+  T extends MatchKey | boolean,
+  P extends MatchPatterns<T>,
+>(value: T, patterns: P): InferReturnTypes<P> {
   const unbox = (v: any) =>
     typeof v?.valueOf === "function" ? v.valueOf() : v;
   const getSymbol = (v: any) =>
@@ -99,5 +107,5 @@ export function matchAll<T extends MatchKey | boolean, R>(
     return (patterns as any)[normalizedKey]!(value);
   }
 
-  return patterns._();
+  return patterns._() as InferReturnTypes<P>;
 }
