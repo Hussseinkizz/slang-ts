@@ -1,4 +1,4 @@
-# Slang
+# slang-ts
 
 Functional programming library for TypeScript.
 
@@ -50,18 +50,6 @@ import { option, Ok, Err, atom, match } from "slang-ts";
 import * as slang from "slang-ts";
 
 slang.println("Hello world!");
-```
-
-### println
-
-Well there's nothing special to slang's println utility, its just who wants console.log, its not fun at all, so we instead println, clean and classic, but latter it can be made environment aware so it doesn't print in prod, but for now its just sugar for console.log.
-
-```ts
-import { println } from "slang-ts";
-
-const name = "kizz";
-println("name:", name);
-println("multiple", "args", "work", { too: true });
 ```
 
 ### Option
@@ -430,6 +418,18 @@ function processUser(user: User | null) {
 // Guard clause pattern
 const config = loadConfig();
 if (!config.apiKey) panic("API key required");
+```
+
+### println
+
+Well there's nothing special to slang's println utility, its just who wants console.log, its not fun at all, so we instead println, clean and classic, but latter it can be made environment aware so it doesn't print in prod, but for now its just sugar for console.log.
+
+```ts
+import { println } from "slang-ts";
+
+const name = "kizz";
+println("name:", name);
+println("multiple", "args", "work", { too: true });
 ```
 
 And more are to be implemented in coming versions...
