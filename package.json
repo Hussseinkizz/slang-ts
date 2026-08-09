@@ -1,7 +1,7 @@
 {
   "name": "slang-ts",
   "version": "0.0.8",
-  "description": "Functional programming toolkit for TypeScript: Option, Result, pattern matching, and async primitives",
+  "description": "Functional programming library for TypeScript: Option, Result, pattern matching, and async primitives",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
