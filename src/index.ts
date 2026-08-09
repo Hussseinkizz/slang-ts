@@ -15,6 +15,10 @@ export type { Result, ResultMethods, Ok as OkType, Err as ErrType } from "./resu
 export { option, isFalsy } from "./option";
 export type { Option, OptionMethods, Some, None, NonTruthy } from "./option";
 
+// Options normalization utility
+export { Options } from "./options";
+export type { OptionsValue } from "./options";
+
 // Atom type and factory
 export { atom } from "./atom";
 export type { Atom, AtomMethods } from "./atom";

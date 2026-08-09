@@ -14,6 +14,7 @@ npm i slang-ts
 
 - [x] Result (Ok, Err)
 - [x] Maybe (Option)
+- [x] Options (normalize mixed values)
 - [x] andThen
 - [x] Atom
 - [x] Expect
@@ -117,6 +118,35 @@ if (user.isOk) {
   println("User:", user.value.name);
 }
 ```
+
+### Options
+
+Normalizes heterogeneous values — raw values, `Option`s, and `Result`s — into a single `Result`. Returns the first usable value as `Ok`, or the provided `Err` fallback if none is usable. A value is usable when its unwrapped inner value is truthy; `None`, `Err`, null, undefined, empty strings, NaN, and Infinity are skipped (note `0` and `false` are usable, matching `option()` semantics).
+
+```ts
+import { Options, option, Ok, Err } from "slang-ts";
+
+// First usable value wins
+let a = null;
+let b = option(undefined);
+let c = Ok(true);
+let d = Err("nope!");
+
+const something = Options([a, b, c, d], Err("No value!"));
+// Ok(true) - c is usable
+
+// Nothing usable -> fallback
+let e = option(null);
+const nothing = Options([a, b, e, d], Err("No value!"));
+// Err("No value!")
+
+// Raw (non-wrapped) values work too, just like a single option():
+Options([null, undefined, "hello"]);          // Ok("hello") - raw truthy wins
+Options(["", 0, "zero is skipped, 0 used"]);  // Ok("...") - skips "" first
+Options([null, undefined, ""]);               // Err("No value!") - all raw falsy
+```
+
+Useful when values come from different functions with inconsistent return types and all you care about is whether the end result is usable.
 
 ### Atom
 
