@@ -1,26 +1,38 @@
 import {
   atom,
+  createChannel,
+  createSignal,
   Err,
   match,
   matchAll,
   Ok,
   option,
+  panic,
+  pipe,
   println,
   safeTry,
+  setEnvironment,
+  superPromise,
+  superRunner,
   unzip,
   zip,
   zipWith,
-  panic,
-  pipe,
   type NonTruthy,
   type Option,
   type Result,
 } from "./src";
 import { maybeEmpty, maybeFail, randomTrue } from "./utils";
 
-// println
+// println — environment-aware; prints in dev, no-ops in production
 const name = "kizz";
 println("name:", name);
+
+setEnvironment("production");
+println("not printed in prod");
+setEnvironment({ printFn: (line) => process.stdout.write(`[custom logger] ${line}`) });
+println("routed to the custom logger");
+setEnvironment({ printFn: null });
+setEnvironment("dev");
 
 // atoms
 const userAtom = atom("kizz");
@@ -382,3 +394,88 @@ println("After side effect:", sideEffect.value); // 42
 // Async andThen
 const asyncAndThen = (await option(5).andThen(async (x) => x * 10)) as any;
 println("Async andThen result:", asyncAndThen.value); // 50
+
+// --- Async primitives ---
+
+// Signal — a trigger that fires once and stays fired
+const go = createSignal();
+go.addEventListener("abort", () => println("ready trigger went off"));
+go.fire();
+println("trigger state:", go.aborted); // true
+
+// SuperPromise — one async operation, lifecycle handled for you
+const fetchUser = () =>
+  new Promise<string>((resolve) => setTimeout(() => resolve("Kizz"), 10));
+
+const userTask = superPromise(fetchUser, { timeout: 1000, retry: 1 });
+const userResult = await userTask;
+if (userResult.isOk) {
+  println("User:", userResult.value);
+} else {
+  println("Failed:", userResult.error);
+}
+
+// defer — start only after something else finishes
+const loadConfig = async () => ({ region: "eu" });
+const configTask = superPromise(loadConfig);
+const userAfter = superPromise(fetchUser, { defer: configTask.done });
+const deferredResult = await userAfter;
+if (deferredResult.isOk) {
+  println("Deferred user:", deferredResult.value);
+}
+
+// Manual control and tap
+const manual = superPromise<number>();
+manual.resolve(42);
+const manualResult = await manual;
+if (manualResult.isOk) println("Manual:", manualResult.value);
+
+await superPromise(() => 7).tap((v) => println("Tap:", v));
+
+// SuperRunner — Promise.all/race grown up: several SuperPromises, in order or in parallel
+const workflow = superRunner({
+  type: "all",
+  runners: {
+    user: superPromise(fetchUser),
+    config: superPromise(loadConfig),
+  },
+});
+const workflowResult = await workflow.start();
+if (workflowResult.isOk) {
+  println("Workflow:", workflowResult.value);
+}
+
+const ordered = superRunner({
+  type: "sequence",
+  runners: [superPromise(() => 1), superPromise(() => 2), superPromise(() => 3)],
+});
+const orderedResult = await ordered.start();
+if (orderedResult.isOk) println("Sequence:", orderedResult.value);
+
+const fast = superPromise(
+  () => new Promise<string>((resolve) => setTimeout(() => resolve("cache"), 5)),
+);
+const slow = superPromise(
+  () => new Promise<string>((resolve) => setTimeout(() => resolve("network"), 50)),
+);
+const raceRunner = superRunner({
+  type: "race",
+  count: 1,
+  runners: { cache: fast, network: slow },
+});
+const raceResult = await raceRunner.start();
+if (raceResult.isOk) println("Race winner:", raceResult.value);
+
+// Channel — events between parts that don't know each other
+const channel = createChannel();
+
+const unsubscribe = channel.subscribe({ topic: "user.created" }, (event) => {
+  println("Channel event:", event.topic, event.data);
+});
+channel.send({ topic: "user.created", data: { id: 1 } });
+unsubscribe();
+
+channel.subscribe({ topic: "user.loaded" }, (event) => {
+  println("When event:", event.data);
+});
+channel.when({ signal: userTask.done, topic: "user.loaded", data: { id: 1 } });

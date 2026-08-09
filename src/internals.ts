@@ -20,6 +20,14 @@ export const isResult = (value: unknown): value is Result<unknown, unknown> =>
   "type" in value &&
   (value.type === "Ok" || value.type === "Err");
 
+/**
+ * Hidden activation hook carried by lifecycle signals (task.done, runner.done).
+ * Lets defer chains activate their source task when awaited.
+ */
+export const ACTIVATE_HOOK: unique symbol = Symbol("slang.activate");
+
+export type Activatable = { [ACTIVATE_HOOK]?: () => void };
+
 /** Type guard for Option */
 export const isOption = (value: unknown): value is Option<unknown> =>
   value != null &&

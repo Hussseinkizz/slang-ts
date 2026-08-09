@@ -2,7 +2,7 @@
 
 Functional programming library for TypeScript.
 
-A collection of functional programming utilities and other cool programming stuff from other languages such as rust implemented in TypeScript.
+A collection of utilities and other cool programming stuff brought over from languages like Rust.
 
 ## Install
 
@@ -12,32 +12,43 @@ npm i slang-ts
 
 ## Implemented Utilities
 
+- [x] Option (Some, None)
+- [x] isFalsy (Option truthiness check)
 - [x] Result (Ok, Err)
-- [x] Maybe (Option)
-- [x] Options (normalize mixed values)
-- [x] andThen
-- [x] Atom
 - [x] Expect
 - [x] Unwrap (on Option)
 - [x] Else (on unwrap)
-- [x] Panic
-- [x] Zip, Unzip, zipWith
-- [x] SafeTry
+- [x] andThen
 - [x] Match
 - [x] MatchAll
+- [x] Options (normalize mixed values)
+- [x] SafeTry
 - [x] Pipe
 - [x] To (converters, e.g. `userAtom.to('option')`)
+- [x] Atom
+- [x] Zip, Unzip, zipWith
+- [x] Panic
+- [x] println (environment-aware logging)
+- [x] setEnvironment (logging mode, custom logger)
+- [x] Signal (lifecycle trigger)
+- [x] SuperPromise (abort, reject, resolve, defer)
+- [x] SuperRunner (sequence, all, race)
+- [x] Channel (send, subscribe, when)
+- [x] scheduleMicrotask (internal scheduling helper)
 
-All utilities fully tested, See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
+All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
-## Others (Planned)
+## New in v0.0.8
 
-- Pubsub store with state locks
-- Promises and async utilities
+- **Signal**: a simple on/off trigger that fires once and stays fired; use it to make something start only after something else finishes.
+- **println now respects the environment**: `setEnvironment("production")` (or `"prod"`) turns it into a no-op, so dev logging never reaches prod logs; short forms `dev`/`prod` accepted, and it appends a real newline. Pass `{ printFn }` to route println through an existing logger instead.
+- **SuperPromise**: native JavaScript promises plus wait, retry, time out, cancel, settling into `Ok`/`Err`; use it for any async operation that needs more than plain promise.
+- **SuperRunner**: `Promise.all` and `Promise.race` grown up: run several SuperPromises in order, in parallel, or take first to finish.
+- **Channel**: a simple event bus between parts of your app that don't need to know each other; use it to broadcast things like "user created" or "workflow completed" without wiring components together.
 
 ## How It Works
 
-You can import utilities individually or together:
+Import utilities individually or together:
 
 ```ts
 // Individual imports
@@ -119,53 +130,76 @@ if (user.isOk) {
 }
 ```
 
-### Options
+### Expect
 
-Normalizes heterogeneous values — raw values, `Option`s, and `Result`s — into a single `Result`. Returns the first usable value as `Ok`, or the provided `Err` fallback if none is usable. A value is usable when its unwrapped inner value is truthy; `None`, `Err`, null, undefined, empty strings, NaN, and Infinity are skipped (note `0` and `false` are usable, matching `option()` semantics).
+Unwraps values or throws with custom message. Use when failure is unrecoverable.
 
 ```ts
-import { Options, option, Ok, Err } from "slang-ts";
+const personAge = option(25).expect("a person must have age!");
+println("person age", personAge); // 25
 
-// First usable value wins
-let a = null;
-let b = option(undefined);
-let c = Ok(true);
-let d = Err("nope!");
-
-const something = Options([a, b, c, d], Err("No value!"));
-// Ok(true) - c is usable
-
-// Nothing usable -> fallback
-let e = option(null);
-const nothing = Options([a, b, e, d], Err("No value!"));
-// Err("No value!")
-
-// Raw (non-wrapped) values work too, just like a single option():
-Options([null, undefined, "hello"]);          // Ok("hello") - raw truthy wins
-Options(["", 0, "zero is skipped, 0 used"]);  // Ok("...") - skips "" first
-Options([null, undefined, ""]);               // Err("No value!") - all raw falsy
+// This would throw!
+// const personAge2 = option("").expect("a person must have age!");
 ```
 
-Useful when values come from different functions with inconsistent return types and all you care about is whether the end result is usable.
+### Unwrap/Else
 
-### Atom
-
-Creates unique, non-interned symbols with semantic descriptions. Each call produces a distinct identity. So ideally define them in one file and import from it everywhere else, great for env variables stuff.
+Chainable unwrapping with mandatory fallback. Must call `.else()` or throws.
 
 ```ts
-import { atom } from "slang-ts";
+const port = option(process.env.PORT).unwrap().else(3000);
+println("Using port:", port);
 
-const userAtom = atom("kizz");
-const user2Atom = atom("kizz");
+// Function fallbacks
+const retries = option(null).unwrap().else(() => 5);
+println("Retries:", retries);
 
-println(userAtom === atom("kizz")); // false - non interned ✅
-println(userAtom.description);      // "kizz"
+// This throws! No .else() chained
+// const nothing = option(null).unwrap();
+```
 
-if (userAtom === user2Atom) {
-  println("all the same");
-} else {
-  println("not the same");          // This prints!
-}
+### andThen
+
+Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. Returns original instance if provided transformation function returns `undefined`.
+
+```ts
+// Option - transforms Some, skips None
+option(5).andThen(x => x * 2);              // Some(10)
+option(null).andThen(x => x * 2);           // None (skipped)
+option(5).andThen(() => undefined);         // Some(5) - original
+
+// Result - transforms Ok, skips Err
+Ok(10).andThen(x => x + 5);                 // Ok(15)
+Err("fail").andThen(x => x + 5);            // Err("fail") (skipped)
+
+// Atom - transforms description (sync only)
+atom("hello").andThen(s => s.toUpperCase()); // Atom("HELLO")
+
+// Chained andThen - multiple transformations
+option(5)
+  .andThen(x => x + 1)
+  .andThen(x => x * 2)
+  .andThen(x => x.toString());              // Some("12")
+
+Ok(10)
+  .andThen(x => x * 2)
+  .andThen(x => x + 5)
+  .andThen(x => ({ value: x }));            // Ok({ value: 25 })
+
+atom("hello")
+  .andThen(s => s.toUpperCase())
+  .andThen(s => s + "!");                   // Atom("HELLO!")
+
+// Async support for Option and Result
+const data = await option(5).andThen(async x => await fetchData(x));
+
+// Error handling
+option(5).andThen(() => { throw "oops" });  // None (caught)
+Ok(5).andThen(() => { throw "oops" });      // Err("oops")
+atom("x").andThen(() => { throw "oops" });  // Panics!
+
+// Type transformation
+option(42).andThen(x => x.toString());      // Some("42")
 ```
 
 ### Match
@@ -218,32 +252,100 @@ const label = matchAll(isActive, {
 println(label); // "Active"
 ```
 
-### Expect
+### Options
 
-Unwraps values or throws with custom message. Use when failure is unrecoverable.
+Normalizes heterogeneous values (raw values, `Option`s, and `Result`s) into a single `Result`. Returns the first usable value as `Ok`, or the provided `Err` fallback if none is usable. A value is usable when its unwrapped inner value is truthy; `None`, `Err`, null, undefined, empty strings, NaN, and Infinity are skipped (note `0` and `false` are usable, matching `option()` semantics).
 
 ```ts
-const personAge = option(25).expect("a person must have age!");
-println("person age", personAge); // 25
+import { Options, option, Ok, Err } from "slang-ts";
 
-// This would throw!
-// const personAge2 = option("").expect("a person must have age!");
+// First usable value wins
+let a = null;
+let b = option(undefined);
+let c = Ok(true);
+let d = Err("nope!");
+
+const something = Options([a, b, c, d], Err("No value!"));
+// Ok(true) - c is usable
+
+// Nothing usable -> fallback
+let e = option(null);
+const nothing = Options([a, b, e, d], Err("No value!"));
+// Err("No value!")
+
+// Raw (non-wrapped) values work too, just like a single option():
+Options([null, undefined, "hello"]);          // Ok("hello") - raw truthy wins
+Options(["", 0, "zero is skipped, 0 used"]);  // Ok("...") - skips "" first
+Options([null, undefined, ""]);               // Err("No value!") - all raw falsy
 ```
 
-### Unwrap/Else
+Useful when values come from different functions with inconsistent return types and all you care about is whether the end result is usable.
 
-Chainable unwrapping with mandatory fallback. Must call `.else()` or throws.
+### SafeTry
+
+Wraps potentially throwing functions in try-catch, returning a `Result<T, string>`. Always needs to be awaited as its async.
 
 ```ts
-const port = option(process.env.PORT).unwrap().else(3000);
-println("Using port:", port);
+import { safeTry } from "slang-ts";
 
-// Function fallbacks
-const retries = option(null).unwrap().else(() => 5);
-println("Retries:", retries);
+const result = await safeTry(() => {
+  if (denom === 0) throw new Error("Cannot divide by zero");
+  return num / denom;
+});
 
-// This throws! No .else() chained
-// const nothing = option(null).unwrap();
+if (result.isOk) {
+  println("Result:", result.value);
+} else {
+  println("Error:", result.error);
+}
+
+// Async functions work the same way
+const data = await safeTry(async () => {
+  const res = await fetch("/api/user");
+  return res.json();
+});
+
+if (data.isOk) {
+  println("User:", data.value);
+}
+
+// Re-throw critical errors instead of capturing
+await safeTry(() => {
+  throw new Error("Critical!");
+}, { throw: true });
+```
+
+### Pipe
+
+Sequential function composition where each function receives a `Result` and returns a `Result`. Accepts plain values, Option, Result, or Atom as initial input.
+
+```ts
+import { pipe, Ok, Err, option, type Result } from "slang-ts";
+
+// Create pipeline functions
+const add = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value + x) : res;
+
+const multiply = (x: number) => (res: Result<number, string>) =>
+  res.isOk ? Ok(res.value * x) : res;
+
+// Basic usage
+const result = await pipe(5, add(3), multiply(2)).run();
+println("Result:", result.value); // 16
+
+// With Options as initial value
+const fromOption = await pipe(option(10), add(5)).run();
+println("From option:", fromOption.value); // 15
+
+// With callbacks and error handling
+const result = await pipe(5, add(3), multiply(2)).run({
+  onEach: ({ currentFn, prevResult }) => {
+    println("Executed:", currentFn);
+  },
+  onSuccess: (value) => println("Done:", value),
+  onError: (err) => println("Failed:", err.message),
+  allowErrors: false, // stops pipeline on first Err
+});
 ```
 
 ### To
@@ -261,48 +363,24 @@ const errResult = option(null).to("result");
 println("Result:", errResult.type);        // "Err"
 ```
 
-### andThen
+### Atom
 
-Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. Returns original instance if provided transformation function returns `undefined`.
+Creates unique, non-interned symbols with semantic descriptions. Each call produces a distinct identity. Define them in one file and import from it everywhere else, handy for env-var style constants.
 
 ```ts
-// Option - transforms Some, skips None
-option(5).andThen(x => x * 2);              // Some(10)
-option(null).andThen(x => x * 2);           // None (skipped)
-option(5).andThen(() => undefined);         // Some(5) - original
+import { atom } from "slang-ts";
 
-// Result - transforms Ok, skips Err
-Ok(10).andThen(x => x + 5);                 // Ok(15)
-Err("fail").andThen(x => x + 5);            // Err("fail") (skipped)
+const userAtom = atom("kizz");
+const user2Atom = atom("kizz");
 
-// Atom - transforms description (sync only)
-atom("hello").andThen(s => s.toUpperCase()); // Atom("HELLO")
+println(userAtom === atom("kizz")); // false - non interned
+println(userAtom.description);      // "kizz"
 
-// Chained andThen - multiple transformations
-option(5)
-  .andThen(x => x + 1)
-  .andThen(x => x * 2)
-  .andThen(x => x.toString());              // Some("12")
-
-Ok(10)
-  .andThen(x => x * 2)
-  .andThen(x => x + 5)
-  .andThen(x => ({ value: x }));            // Ok({ value: 25 })
-
-atom("hello")
-  .andThen(s => s.toUpperCase())
-  .andThen(s => s + "!");                   // Atom("HELLO!")
-
-// Async support for Option and Result
-const data = await option(5).andThen(async x => await fetchData(x));
-
-// Error handling
-option(5).andThen(() => { throw "oops" });  // None (caught)
-Ok(5).andThen(() => { throw "oops" });      // Err("oops")
-atom("x").andThen(() => { throw "oops" });  // Panics!
-
-// Type transformation
-option(42).andThen(x => x.toString());      // Some("42")
+if (userAtom === user2Atom) {
+  println("all the same");
+} else {
+  println("not the same");          // This prints!
+}
 ```
 
 ### Zip
@@ -366,73 +444,6 @@ println(unzip(zipped));
 // [[1, 2, 3], [4, 5, 6]]
 ```
 
-### Pipe
-
-Sequential function composition where each function receives a `Result` and returns a `Result`. Accepts plain values, Option, Result, or Atom as initial input.
-
-```ts
-import { pipe, Ok, Err, option, type Result } from "slang-ts";
-
-// Create pipeline functions
-const add = (x: number) => (res: Result<number, string>) =>
-  res.isOk ? Ok(res.value + x) : res;
-
-const multiply = (x: number) => (res: Result<number, string>) =>
-  res.isOk ? Ok(res.value * x) : res;
-
-// Basic usage
-const result = await pipe(5, add(3), multiply(2)).run();
-println("Result:", result.value); // 16
-
-// With Options as initial value
-const fromOption = await pipe(option(10), add(5)).run();
-println("From option:", fromOption.value); // 15
-
-// With callbacks and error handling
-const result = await pipe(5, add(3), multiply(2)).run({
-  onEach: ({ currentFn, prevResult }) => {
-    println("Executed:", currentFn);
-  },
-  onSuccess: (value) => println("Done:", value),
-  onError: (err) => println("Failed:", err.message),
-  allowErrors: false, // stops pipeline on first Err
-});
-```
-
-### SafeTry
-
-Wraps potentially throwing functions in try-catch, returning a `Result<T, string>`. Always needs to be awaited as its async.
-
-```ts
-import { safeTry } from "slang-ts";
-
-const result = await safeTry(() => {
-  if (denom === 0) throw new Error("Cannot divide by zero");
-  return num / denom;
-});
-
-if (result.isOk) {
-  println("Result:", result.value);
-} else {
-  println("Error:", result.error);
-}
-
-// Async functions work the same way
-const data = await safeTry(async () => {
-  const res = await fetch("/api/user");
-  return res.json();
-});
-
-if (data.isOk) {
-  println("User:", data.value);
-}
-
-// Re-throw critical errors instead of capturing
-await safeTry(() => {
-  throw new Error("Critical!");
-}, { throw: true });
-```
-
 ### Panic
 
 Throws an error immediately. Use for unrecoverable failures.
@@ -452,17 +463,179 @@ if (!config.apiKey) panic("API key required");
 
 ### println
 
-Well there's nothing special to slang's println utility, its just who wants console.log, its not fun at all, so we instead println, clean and classic, but latter it can be made environment aware so it doesn't print in prod, but for now its just sugar for console.log.
+console.log sugar that stays out of production. Prints a line (args joined, newline appended) and does nothing once `setEnvironment` puts the app in production mode. Dev chatter never leaks to prod logs. Already have an advanced logger? Hand it to `setEnvironment({ printFn })` and every println routes through it: your logging code stays exactly as it is, in every mode.
 
 ```ts
-import { println } from "slang-ts";
+import { println, setEnvironment } from "slang-ts";
 
-const name = "kizz";
+setEnvironment("development"); // "dev" works too (default)
 println("name:", name);
 println("multiple", "args", "work", { too: true });
+
+setEnvironment("production"); // "prod" works too
+println("not printed in prod");
+
+// Route println through an existing logger instead, even in prod
+import { appLogger } from "./logger";
+setEnvironment({ printFn: (line) => appLogger.info(line.trimEnd()) });
 ```
 
-And more are to be implemented in coming versions...
+### Signal
+
+A trigger (we call them signals) is a switch that fires once and stays fired. Flip it when you're ready, and anything waiting on it reacts. They're interchangeable with the platform's `AbortSignal`, so a signal you create can be handed to anything that already accepts one.
+
+```ts
+import { createSignal } from "slang-ts";
+
+const ready = createSignal();
+
+ready.addEventListener("abort", () => println("ready!")); // fires when the trigger goes off
+ready.fire();                                             // flip it
+```
+
+The useful part: gate work on a signal, or publish events when a lifecycle completes.
+
+```ts
+const task = superPromise(loadUser, { defer: ready }); // starts only once ready fires
+
+channel.when({
+  signal: task.done,   // task finished, success or not
+  topic: "user.loaded",
+  data: { id: userId },
+});
+```
+
+### SuperPromise
+
+Native JavaScript promises plus execution controls: wait before starting, retry when it fails, time out when it hangs, cancel from outside, `done` trigger to wire into other things. Tasks settle into `Ok` or `Err`: just check outcome, no try/catch around awaits. Library exports no short alias: alias locally when the name gets heavy: `import { superPromise as sp }`.
+
+```ts
+import { superPromise } from "slang-ts";
+
+// A fetch that gives up after 5 seconds and tries up to 3 more times
+const result = await superPromise(
+  (signal) => fetch("/api/user", { signal }),
+  { timeout: 5000, retry: 3 }
+);
+
+if (result.isOk) {
+  println("User:", result.value);
+} else {
+  println("Failed:", result.error);
+}
+```
+
+No `await` handy? Chain with `.then`; the callback receives the same `Result`:
+
+```ts
+superPromise(loadUser, { timeout: 5000 }).then((result) => {
+  if (result.isOk) {
+    println("User:", result.value);
+  } else {
+    println("Failed:", result.error);
+  }
+});
+```
+
+Need it to wait for something else first? `defer` holds execution until a signal fires; chain operations so the next starts only when the previous is done:
+
+```ts
+const config = superPromise(loadConfig);
+const user = superPromise(loadUser, { defer: config.done });
+
+const result = await user; // config runs first, then user
+```
+
+Cancel from outside, or keep retrying until you call it off:
+
+```ts
+task.abort();                                  // cancel; you get Err("Aborted")
+superPromise(fetchData, {
+  retryUntil: { signal: stopSignal, delay: 2000 }, // keep trying until stopSignal fires
+});
+```
+
+One gotcha worth knowing: a task doesn't start until you consume it (`await`, `.then()`, or a runner's `start()`), so you can wire up dependencies first and they'll run in the right order when awaited.
+
+Also handy:
+
+```ts
+const manual = superPromise<number>();  // no executor; settle it yourself
+manual.resolve(100);                    // or manual.reject(error)
+
+await superPromise(loadUser).tap((user) => println(user.name)); // observe without changing
+```
+
+### SuperRunner
+
+Same idea as `Promise.all`, `Promise.race`, and plain `await` chain, but for SuperPromises, with cancellation and clean `Result` outcomes. Use it when multiple operations are needed: run several in order, in parallel, or take first to finish. Call `start()` once and read result; calling again just hands back same result without re-running anything.
+
+```ts
+import { superRunner, superPromise as sp } from "slang-ts";
+
+// In order: steps that depend on each other; stops at the first failure
+const auth = superRunner({
+  type: "sequence",
+  runners: [sp(authenticate), sp(loadProfile), sp(loadDashboard)],
+});
+const ordered = await auth.start(); // [authResult, profileResult, dashboardResult]
+
+// In parallel: all kicked off at once; result keyed by name
+const parallel = superRunner({
+  type: "all",
+  runners: {
+    user: sp(getUser),
+    posts: sp(getPosts),
+    settings: sp(getSettings),
+  },
+});
+const combined = await parallel.start(); // { user, posts, settings }
+
+// First to finish: take whichever source responds first, cancel the rest
+const first = superRunner({
+  type: "race",
+  count: 1,
+  runners: {
+    primary: sp(fetchPrimary),
+    backup: sp(fetchBackup),
+    cache: sp(fetchCache),
+  },
+});
+const winner = await first.start(); // { cache: ... } or whichever won
+```
+
+Cancel everything with one call:
+
+```ts
+workflow.abort(); // cancels all active children
+```
+
+### Channel
+
+Channel lets parts of your app that don't know each other talk: one side publishes, another listens, no wiring between them.
+
+```ts
+import { createChannel } from "slang-ts";
+
+const channel = createChannel();
+
+const unsubscribe = channel.subscribe({ topic: "user.created" }, (event) => {
+  println("Created:", event.data);
+});
+
+channel.send({ topic: "user.created", data: user });
+unsubscribe(); // stop listening
+```
+
+Publish when a trigger goes off, a task finishing, anything at all:
+
+```ts
+channel.when({
+  signal: workflow.done,
+  topic: "workflow.completed",
+  data: { workflowId },
+});
+```
 
 ## Code Samples
 
@@ -470,4 +643,4 @@ See [example.ts](https://github.com/Hussseinkizz/slang/blob/main/example.ts) for
 
 ## Contributing
 
-Contributions are welcome, I know there a lot of cool things out there we can bring in.
+Contributions are welcome. I know there are a lot of cool things out there we can bring in.

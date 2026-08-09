@@ -1,4 +1,4 @@
-# SuperPromise / SuperRunner / Channel — Implementation Specification
+# SuperPromise / SuperRunner / Channel: Implementation Specification
 
 ## 1. Purpose
 
@@ -6,13 +6,13 @@ A small TypeScript async utility library built on native JavaScript Promises, **
 
 Three independent primitives:
 
-* **SuperPromise** — one async operation + lifecycle/execution ergonomics.
-* **SuperRunner** — orchestration of multiple SuperPromises.
-* **Channel** — event communication.
+* **SuperPromise**: native JavaScript promises plus execution ergonomics: single async operation with lifecycle controls (wait, retry, time out, cancel).
+* **SuperRunner**: orchestration of multiple SuperPromises; `Promise.all`/`Promise.race`/`await`-chain territory, plus cancellation.
+* **Channel**: event communication.
 
 Supporting primitive:
 
-* **Signal** — lifecycle trigger used for dependencies/cancellation.
+* **Signal**: lifecycle trigger used for dependencies/cancellation.
 
 Application-facing async outcomes use slang-ts `Result<T, E>` (`Ok`/`Err`).
 
@@ -24,7 +24,7 @@ Core philosophy:
 
 # 2. Result
 
-Application-level async operations resolve to the **existing slang-ts Result type** (`Ok`/`Err`) — not a separate flat shape:
+Application-level async operations resolve to the **existing slang-ts Result type** (`Ok`/`Err`), not a separate flat shape:
 
 ```ts
 import { Ok, Err, type Result } from "slang-ts";
@@ -36,7 +36,7 @@ import { Ok, Err, type Result } from "slang-ts";
 Primary usage:
 
 ```ts
-const result = await sp(fetchUser);
+const result = await superPromise(fetchUser);
 
 if (result.isOk) {
   console.log(result.value);
@@ -48,7 +48,7 @@ if (result.isOk) {
 SuperPromise remains Promise-compatible and supports normal Promise composition:
 
 ```ts
-sp(fetchUser)
+superPromise(fetchUser)
   .then(...)
   .finally(...);
 ```
@@ -68,22 +68,26 @@ Do not expose a separate `.result` property.
 
 # 3. SuperPromise
 
+Native JavaScript promises plus execution controls (defer, delay, timeout, retry, retryUntil, abort) and `done` trigger other primitives can wait on.
+
 ## Construction
 
 ```ts
 const task = superPromise(fn, options?);
 ```
 
-Short alias:
+No alias is exported from the library; importers who want a short name alias it locally:
 
 ```ts
+import { superPromise as sp } from "slang-ts";
+
 const task = sp(fn, options?);
 ```
 
 The executor receives an `AbortSignal`:
 
 ```ts
-const task = sp(async signal => {
+const task = superPromise(async signal => {
   const response = await fetch(url, { signal });
   return response.json();
 });
@@ -102,7 +106,7 @@ const result = await task; // Result<T, E>
 Calling without an executor creates an externally controlled SuperPromise:
 
 ```ts
-const task = sp<number>();
+const task = superPromise<number>();
 
 task.resolve(100);
 
@@ -142,9 +146,9 @@ It exists for lifecycle dependencies and integrations.
 Example:
 
 ```ts
-const config = sp(loadConfig);
+const config = superPromise(loadConfig);
 
-const user = sp(loadUser, {
+const user = superPromise(loadUser, {
   defer: config.done
 });
 ```
@@ -170,7 +174,7 @@ Signal-aware executors receive that signal.
 Manually settle an externally controlled SuperPromise:
 
 ```ts
-const task = sp<number>();
+const task = superPromise<number>();
 
 task.resolve(100);
 ```
@@ -182,7 +186,7 @@ task.resolve(100);
 Manually reject an externally controlled SuperPromise:
 
 ```ts
-const task = sp<number>();
+const task = superPromise<number>();
 
 task.reject(error);
 ```
@@ -194,7 +198,7 @@ task.reject(error);
 Execution policies are configured during construction:
 
 ```ts
-sp(fn, {
+superPromise(fn, {
   defer: signal,
   delay: 1000,
   timeout: 5000,
@@ -219,9 +223,9 @@ General rule:
 Do not execute until the supplied signal fires.
 
 ```ts
-const first = sp(loadConfig);
+const first = superPromise(loadConfig);
 
-const second = sp(loadUser, {
+const second = superPromise(loadUser, {
   defer: first.done
 });
 ```
@@ -243,7 +247,7 @@ The abstraction should hide microtask/event-loop details from callers.
 Delay initial execution.
 
 ```ts
-const result = await sp(fetchData, {
+const result = await superPromise(fetchData, {
   delay: 1000
 });
 ```
@@ -251,7 +255,7 @@ const result = await sp(fetchData, {
 Normal retries respect this delay:
 
 ```ts
-sp(fetchData, {
+superPromise(fetchData, {
   delay: 1000,
   retry: 3
 });
@@ -290,7 +294,7 @@ A Promise race may be used internally, but merely abandoning the Promise is insu
 Example:
 
 ```ts
-const result = await sp(
+const result = await superPromise(
   signal => fetch(url, { signal }),
   { timeout: 5000 }
 );
@@ -310,7 +314,7 @@ Retry failed execution.
 
 Normal retries respect `delay`.
 
-**Counting semantics:** `retry: n` means `n` retries after the first attempt — `n + 1` attempts total. `retry: 0` = a single attempt.
+**Counting semantics:** `retry: n` means `n` retries after the first attempt; `n + 1` attempts total. `retry: 0` = a single attempt.
 
 **Never retried:** aborts and timeouts. Cancellation is user intent; retrying would fight it. Only ordinary failures consume retry slots.
 
@@ -333,12 +337,14 @@ Continue retrying until the supplied signal fires.
 
 **Stop semantics:** when the stop signal fires, retrying ends. If the signal fires during an active attempt, the in-flight attempt is cancelled and the task settles with `Err("Stopped")`.
 
+`retryUntil.delay` waits between attempts only; no wait applies before the first attempt.
+
 Example:
 
 ```ts
 const stop = new AbortController();
 
-const result = await sp(fetchData, {
+const result = await superPromise(fetchData, {
   retryUntil: {
     signal: stop.signal,
     delay: 5000
@@ -353,7 +359,7 @@ const result = await sp(fetchData, {
 The only agreed fluent convenience operation.
 
 ```ts
-const result = await sp(loadUser)
+const result = await superPromise(loadUser)
   .tap(user => console.log(user));
 ```
 
@@ -363,7 +369,7 @@ const result = await sp(loadUser)
 T → tap(sideEffect) → T
 ```
 
-**Failure semantics:** if the callback throws, it is treated as an operation failure — the task settles with `Err` of the thrown value (normalized). Errors are propagated, never swallowed.
+**Failure semantics:** if the callback throws, it is treated as an operation failure; the task settles with `Err` of the thrown value (normalized). Errors are propagated, never swallowed.
 
 ---
 
@@ -391,7 +397,7 @@ Multi-operation orchestration belongs to `SuperRunner`.
 
 # 7. SuperRunner
 
-`SuperRunner` orchestrates multiple **already-created SuperPromises**.
+`Promise.all`/`Promise.race`/`await`-chain territory: orchestrates multiple **already-created SuperPromises** (in order, in parallel, or first-to-finish) with cancellation on top.
 
 It must not accept:
 
@@ -401,8 +407,8 @@ It must not accept:
 Example:
 
 ```ts
-const user = sp(getUser);
-const posts = sp(getPosts);
+const user = superPromise(getUser);
+const posts = superPromise(getPosts);
 
 const task = superRunner({
   type: "all",
@@ -433,7 +439,7 @@ There is no `.defer()`.
 
 ---
 
-# 8. SuperRunner — `sequence`
+# 8. SuperRunner: `sequence`
 
 Uses an array because order is intrinsic.
 
@@ -441,9 +447,9 @@ Uses an array because order is intrinsic.
 const task = superRunner({
   type: "sequence",
   runners: [
-    sp(authenticate),
-    sp(loadProfile),
-    sp(loadDashboard)
+    superPromise(authenticate),
+    superPromise(loadProfile),
+    superPromise(loadDashboard)
   ]
 });
 
@@ -478,7 +484,7 @@ Result is positional:
 
 ---
 
-# 9. SuperRunner — `all`
+# 9. SuperRunner: `all`
 
 Uses a named object because execution order is irrelevant and result identity matters.
 
@@ -486,9 +492,9 @@ Uses a named object because execution order is irrelevant and result identity ma
 const task = superRunner({
   type: "all",
   runners: {
-    user: sp(getUser),
-    posts: sp(getPosts),
-    settings: sp(getSettings)
+    user: superPromise(getUser),
+    posts: superPromise(getPosts),
+    settings: superPromise(getSettings)
   }
 });
 
@@ -515,13 +521,13 @@ Aborting the runner propagates cancellation to active children:
 task.abort();
 ```
 
-**Failure semantics:** fail fast — the first failure aborts the remaining active children and the runner settles with that `Err`. Partial results are not returned.
+**Failure semantics:** fail fast: the first failure aborts the remaining active children and the runner settles with that `Err`. Partial results are not returned.
 
 **Type inference:** the result is a named object `{ user, posts, settings }` with keys matching the runners.
 
 ---
 
-# 10. SuperRunner — `race`
+# 10. SuperRunner: `race`
 
 Uses a named object and winner count.
 
@@ -530,10 +536,10 @@ const task = superRunner({
   type: "race",
   count: 2,
   runners: {
-    primary: sp(fetchPrimary),
-    backup: sp(fetchBackup),
-    cache: sp(fetchCache),
-    replica: sp(fetchReplica)
+    primary: superPromise(fetchPrimary),
+    backup: superPromise(fetchBackup),
+    cache: superPromise(fetchCache),
+    replica: superPromise(fetchReplica)
   }
 });
 
@@ -604,7 +610,7 @@ task.done;
 
 as its lifecycle signal.
 
-**Repeated `start()`:** idempotent — the second call returns the same result without re-executing children.
+**Repeated `start()`:** idempotent; the second call returns the same result without re-executing children.
 
 ---
 
@@ -634,7 +640,7 @@ Public API:
 
 ```ts
 channel.send(...)
-channel.sub(...)
+channel.subscribe(...)
 channel.when(...)
 ```
 
@@ -662,22 +668,22 @@ Event shape:
 
 ---
 
-## `.sub()`
+## `.subscribe()`
 
 Subscribe to events from this channel:
 
 ```ts
-channel.sub({
+channel.subscribe({
   topic: "user.created"
 }, event => {
   console.log(event.data);
 });
 ```
 
-`sub()` returns an unsubscribe function:
+`subscribe()` returns an unsubscribe function:
 
 ```ts
-const unsubscribe = channel.sub({ topic: "user.created" }, handler);
+const unsubscribe = channel.subscribe({ topic: "user.created" }, handler);
 
 unsubscribe(); // stop receiving events
 ```
@@ -719,7 +725,7 @@ Signals are created through a **public factory function**:
 const signal = createSignal();
 ```
 
-**Interface:** a Signal wraps `AbortController` semantics — it is abort-compatible, so any place that accepts a Signal also accepts a native `AbortSignal`:
+**Interface:** a Signal wraps `AbortController` semantics; it is abort-compatible, so any place that accepts a Signal also accepts a native `AbortSignal`:
 
 ```ts
 // Both are valid wherever a signal is expected
@@ -757,7 +763,7 @@ SuperRunner
 Channel
   └── communication
       ├── send
-      ├── sub
+      ├── subscribe
       └── when
 ```
 
@@ -782,7 +788,7 @@ But Channel must not depend on SuperPromise.
 ### Simple operation
 
 ```ts
-const result = await sp(async signal => {
+const result = await superPromise(async signal => {
   const response = await fetch("/api/user", { signal });
   return response.json();
 });
@@ -791,7 +797,7 @@ const result = await sp(async signal => {
 ### Timeout + retry
 
 ```ts
-const result = await sp(fetchData, {
+const result = await superPromise(fetchData, {
   timeout: 5000,
   retry: 3,
   delay: 1000
@@ -801,9 +807,9 @@ const result = await sp(fetchData, {
 ### Lifecycle dependency
 
 ```ts
-const config = sp(loadConfig);
+const config = superPromise(loadConfig);
 
-const user = sp(loadUser, {
+const user = superPromise(loadUser, {
   defer: config.done
 });
 ```
@@ -811,7 +817,7 @@ const user = sp(loadUser, {
 ### Manual operation
 
 ```ts
-const task = sp<number>();
+const task = superPromise<number>();
 
 externalSource.onValue(value => {
   task.resolve(value);
@@ -830,9 +836,9 @@ const result = await task;
 const workflow = superRunner({
   type: "all",
   runners: {
-    user: sp(getUser),
-    posts: sp(getPosts),
-    settings: sp(getSettings)
+    user: superPromise(getUser),
+    posts: superPromise(getPosts),
+    settings: superPromise(getSettings)
   }
 });
 
@@ -845,9 +851,9 @@ const result = await workflow.start();
 const workflow = superRunner({
   type: "sequence",
   runners: [
-    sp(authenticate),
-    sp(loadAccount),
-    sp(loadDashboard)
+    superPromise(authenticate),
+    superPromise(loadAccount),
+    superPromise(loadDashboard)
   ]
 });
 
@@ -861,9 +867,9 @@ const workflow = superRunner({
   type: "race",
   count: 1,
   runners: {
-    primary: sp(fetchPrimary),
-    backup: sp(fetchBackup),
-    cache: sp(fetchCache)
+    primary: superPromise(fetchPrimary),
+    backup: superPromise(fetchBackup),
+    cache: superPromise(fetchCache)
   }
 });
 
@@ -888,7 +894,7 @@ channel.when({
 
 ```ts
 // Single operation
-sp(fn?, options?)
+superPromise(fn?, options?)   // no alias exported; alias locally if you like: superPromise as sp
 
 // Lifecycle
 task.done
@@ -934,7 +940,7 @@ runner.done
 createChannel()
 
 channel.send(...)
-channel.sub(...)
+channel.subscribe(...)
 channel.when(...)
 ```
 
@@ -942,7 +948,7 @@ channel.when(...)
 
 # 17. Decisions log
 
-Resolved semantics — every item below is decided unless marked **OPEN**. Do not silently deviate; update this log when a decision changes.
+Resolved semantics: every item below is decided unless marked **OPEN**. Do not silently deviate; update this log when a decision changes.
 
 | # | Question | Resolution |
 |---|----------|------------|
@@ -951,7 +957,7 @@ Resolved semantics — every item below is decided unless marked **OPEN**. Do no
 | 3 | Exact `retry(n)` counting semantics | `n` retries after the first attempt, `n + 1` attempts total. `retry: 0` = single attempt. |
 | 4 | Retryable vs non-retryable errors | Aborts and timeouts are never retried; only ordinary failures consume retry slots. |
 | 5 | `retryUntil` behavior when its signal fires during an active attempt | In-flight attempt is cancelled, task settles with `Err("Stopped")`. |
-| 6 | Timeout vs explicit abort error representation | `Err("Timed out")` vs `Err("Aborted")` — distinguishable. |
+| 6 | Timeout vs explicit abort error representation | `Err("Timed out")` vs `Err("Aborted")`: distinguishable. |
 | 7 | Exact terminal-state behavior of `.done` | Fires once on settlement, success or failure. |
 | 8 | `tap()` failure behavior | Callback throw is treated as operation failure → `Err` (normalized). |
 | 9 | `sequence` failure semantics | Stop at first failure; remaining runners never start; runner settles with first `Err`. |
@@ -959,11 +965,17 @@ Resolved semantics — every item below is decided unless marked **OPEN**. Do no
 | 11 | `race` behavior when all runners fail | Settles with `Err("All runners failed")`. |
 | 12 | Repeated `SuperRunner.start()` behavior | Idempotent: same result, no re-execution. |
 | 13 | Signal interface and compatibility with native `AbortSignal` | Public `createSignal()` wrapping AbortController semantics; any signal consumer also accepts native `AbortSignal`. |
-| 14 | Channel subscription/unsubscription semantics | `sub()` returns an unsubscribe function. |
+| 14 | Channel subscription/unsubscription semantics | `subscribe()` returns an unsubscribe function. |
 | 15 | Type inference for sequence tuples and named runner results | Sequence → positional tuple; all/race → named object; via const generics. |
+| 16 | When does a SuperPromise start executing? | Lazy activation: on first consumption (`await`/`.then()`/`.catch()`/`.finally()`, or runner `start()`), not at creation. Defer chains activate recursively; awaiting a deferred task runs its dependency. |
+| 17 | `race` with some winners but fewer than `count` | Settles `Err("Not enough runners succeeded")` (zero winners stays `Err("All runners failed")`). |
+| 18 | `tap()` return identity | Returns a new SuperPromise (own done/abort); callback failures settle that new task. |
+| 19 | `retryUntil` first-attempt delay | No wait before the first attempt; `retryUntil.delay` applies between attempts only. |
+| 20 | Channel subscriber throws | Isolated: one throwing subscriber does not break the others; error reported via `println`. |
+| 21 | Built-in aliases (`sp`, `sr`) | Not exported. The library ships full names only; importers alias locally (`import { superPromise as sp }`) so nothing is hidden. |
 
 Open items:
 
-* `retryUntil` stop signal's exact interaction with `delay` between attempts (what wait applies before the first attempt under `retryUntil`).
+* None. All previously open items are resolved (see rows 16–20).
 
 Do not introduce additional public primitives without an explicit design decision.
