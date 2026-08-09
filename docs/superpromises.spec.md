@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-A small TypeScript async utility library built on native JavaScript Promises.
+A small TypeScript async utility library built on native JavaScript Promises, **implemented inside the slang-ts package** and exported through its public entry point (`src/index.ts`).
 
 Three independent primitives:
 
@@ -14,7 +14,7 @@ Supporting primitive:
 
 * **Signal** — lifecycle trigger used for dependencies/cancellation.
 
-Application-facing async outcomes use `Result<T, E>`.
+Application-facing async outcomes use slang-ts `Result<T, E>` (`Ok`/`Err`).
 
 Core philosophy:
 
@@ -24,22 +24,21 @@ Core philosophy:
 
 # 2. Result
 
-Application-level async operations resolve to:
+Application-level async operations resolve to the **existing slang-ts Result type** (`Ok`/`Err`) — not a separate flat shape:
 
 ```ts
-type Result<T, E> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-```
+import { Ok, Err, type Result } from "slang-ts";
 
-The exact representation is an ADR decision.
+// Success:  { type: "Ok", value: T, isOk: true }
+// Failure:  { type: "Err", error: E, isOk: false }
+```
 
 Primary usage:
 
 ```ts
 const result = await sp(fetchUser);
 
-if (result.ok) {
+if (result.isOk) {
   console.log(result.value);
 } else {
   console.error(result.error);
@@ -51,9 +50,17 @@ SuperPromise remains Promise-compatible and supports normal Promise composition:
 ```ts
 sp(fetchUser)
   .then(...)
-  .catch(...)
   .finally(...);
 ```
+
+**Final state rule:** only the settled state yields a `Result`. The underlying promise fulfills with the `Result` as its value and never rejects:
+
+* `await task` → `Result<T, E>`
+* `task.then(cb)` → `cb` receives the `Result` (same mechanism as await)
+* `task.catch(...)` → effectively dead: errors are captured into `Err`, never become rejections (except truly unexpected internal bugs)
+* `task.finally(...)` → native behavior
+
+**Error normalization:** a thrown/rejected `Error` object becomes `Err(error.message)`; any other thrown/rejected value becomes `Err(String(value))`.
 
 Do not expose a separate `.result` property.
 
@@ -85,7 +92,7 @@ const task = sp(async signal => {
 Primary consumption:
 
 ```ts
-const result = await task;
+const result = await task; // Result<T, E>
 ```
 
 ---
@@ -303,7 +310,9 @@ Retry failed execution.
 
 Normal retries respect `delay`.
 
-Exact counting semantics are an ADR decision.
+**Counting semantics:** `retry: n` means `n` retries after the first attempt — `n + 1` attempts total. `retry: 0` = a single attempt.
+
+**Never retried:** aborts and timeouts. Cancellation is user intent; retrying would fight it. Only ordinary failures consume retry slots.
 
 ---
 
@@ -321,6 +330,8 @@ Exact counting semantics are an ADR decision.
 Continue retrying until the supplied signal fires.
 
 `retryUntil` has its own retry preferences and **overrides normal `retry` and `delay` retry behavior**.
+
+**Stop semantics:** when the stop signal fires, retrying ends. If the signal fires during an active attempt, the in-flight attempt is cancelled and the task settles with `Err("Stopped")`.
 
 Example:
 
@@ -352,7 +363,7 @@ const result = await sp(loadUser)
 T → tap(sideEffect) → T
 ```
 
-Exact failure semantics if the callback throws are an ADR decision.
+**Failure semantics:** if the callback throws, it is treated as an operation failure — the task settles with `Err` of the thrown value (normalized). Errors are propagated, never swallowed.
 
 ---
 
@@ -461,6 +472,10 @@ Result is positional:
 ]
 ```
 
+**Failure semantics:** stop at the first failed runner. Remaining runners never start. The runner settles with the first `Err`.
+
+**Type inference:** the result is a positional tuple `[A, B, C]` derived from the runner types via const generics.
+
 ---
 
 # 9. SuperRunner — `all`
@@ -499,6 +514,10 @@ Aborting the runner propagates cancellation to active children:
 ```ts
 task.abort();
 ```
+
+**Failure semantics:** fail fast — the first failure aborts the remaining active children and the runner settles with that `Err`. Partial results are not returned.
+
+**Type inference:** the result is a named object `{ user, posts, settings }` with keys matching the runners.
 
 ---
 
@@ -554,6 +573,10 @@ Result:
 
 Winner/completion order should be preserved where object iteration order is relevant.
 
+**All runners fail:** the runner settles with `Err("All runners failed")`.
+
+**Type inference:** the result is a named object containing only the winning runner keys.
+
 ---
 
 # 11. SuperRunner lifecycle
@@ -580,6 +603,8 @@ task.done;
 ```
 
 as its lifecycle signal.
+
+**Repeated `start()`:** idempotent — the second call returns the same result without re-executing children.
 
 ---
 
@@ -649,7 +674,13 @@ channel.sub({
 });
 ```
 
-Subscription/unsubscription semantics are an ADR decision.
+`sub()` returns an unsubscribe function:
+
+```ts
+const unsubscribe = channel.sub({ topic: "user.created" }, handler);
+
+unsubscribe(); // stop receiving events
+```
 
 ---
 
@@ -678,7 +709,29 @@ The Channel does not know or care where the signal originated.
 
 ---
 
-# 13. Primitive separation
+# 13. Signal
+
+A Signal is a lifecycle trigger: it fires once and stays fired. It is the supporting primitive consumed by `defer`, `retryUntil`, `channel.when`, and `task.done`.
+
+Signals are created through a **public factory function**:
+
+```ts
+const signal = createSignal();
+```
+
+**Interface:** a Signal wraps `AbortController` semantics — it is abort-compatible, so any place that accepts a Signal also accepts a native `AbortSignal`:
+
+```ts
+// Both are valid wherever a signal is expected
+defer: task.done            // SuperPromise lifecycle signal
+defer: controller.signal    // native AbortSignal
+```
+
+`task.done` is a Signal. `retryUntil`'s stop signal is a Signal. The Signal primitive is exported publicly; it has no other dependencies.
+
+---
+
+# 14. Primitive separation
 
 ```text
 Signal
@@ -724,7 +777,7 @@ But Channel must not depend on SuperPromise.
 
 ---
 
-# 14. Representative usage
+# 15. Representative usage
 
 ### Simple operation
 
@@ -831,7 +884,7 @@ channel.when({
 
 ---
 
-# 15. Public API summary
+# 16. Public API summary
 
 ```ts
 // Single operation
@@ -887,24 +940,30 @@ channel.when(...)
 
 ---
 
-# 16. ADR requirements
+# 17. Decisions log
 
-The implementor must create ADRs for unresolved semantics rather than silently inventing behavior:
+Resolved semantics — every item below is decided unless marked **OPEN**. Do not silently deviate; update this log when a decision changes.
 
-1. `Result<T,E>` representation and error normalization.
-2. Native `.then/.catch` behavior relative to `Result`.
-3. Exact `retry(n)` counting semantics.
-4. Retryable vs non-retryable errors.
-5. `retryUntil` behavior when its signal fires during an active attempt.
-6. Timeout vs explicit abort error representation.
-7. Exact terminal-state behavior of `.done`.
-8. `tap()` failure behavior.
-9. `sequence` failure semantics.
-10. `all` failure/result semantics.
-11. `race` behavior when all runners fail.
-12. Repeated `SuperRunner.start()` behavior.
-13. Signal interface and compatibility with native `AbortSignal`.
-14. Channel subscription/unsubscription semantics.
-15. Type inference for sequence tuples and named runner results.
+| # | Question | Resolution |
+|---|----------|------------|
+| 1 | `Result` representation and error normalization | slang-ts `Ok`/`Err`. `Error` → `Err(message)`; other thrown values → `Err(String(value))`. |
+| 2 | Native `.then/.catch` behavior relative to `Result` | Final state only. Promise fulfills with `Result`, never rejects. `then` receives `Result`; `.catch` is effectively dead; `.finally` native. |
+| 3 | Exact `retry(n)` counting semantics | `n` retries after the first attempt, `n + 1` attempts total. `retry: 0` = single attempt. |
+| 4 | Retryable vs non-retryable errors | Aborts and timeouts are never retried; only ordinary failures consume retry slots. |
+| 5 | `retryUntil` behavior when its signal fires during an active attempt | In-flight attempt is cancelled, task settles with `Err("Stopped")`. |
+| 6 | Timeout vs explicit abort error representation | `Err("Timed out")` vs `Err("Aborted")` — distinguishable. |
+| 7 | Exact terminal-state behavior of `.done` | Fires once on settlement, success or failure. |
+| 8 | `tap()` failure behavior | Callback throw is treated as operation failure → `Err` (normalized). |
+| 9 | `sequence` failure semantics | Stop at first failure; remaining runners never start; runner settles with first `Err`. |
+| 10 | `all` failure/result semantics | Fail fast: first failure aborts remaining children; runner settles with that `Err`; no partial results. |
+| 11 | `race` behavior when all runners fail | Settles with `Err("All runners failed")`. |
+| 12 | Repeated `SuperRunner.start()` behavior | Idempotent: same result, no re-execution. |
+| 13 | Signal interface and compatibility with native `AbortSignal` | Public `createSignal()` wrapping AbortController semantics; any signal consumer also accepts native `AbortSignal`. |
+| 14 | Channel subscription/unsubscription semantics | `sub()` returns an unsubscribe function. |
+| 15 | Type inference for sequence tuples and named runner results | Sequence → positional tuple; all/race → named object; via const generics. |
+
+Open items:
+
+* `retryUntil` stop signal's exact interaction with `delay` between attempts (what wait applies before the first attempt under `retryUntil`).
 
 Do not introduce additional public primitives without an explicit design decision.
