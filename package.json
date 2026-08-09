@@ -47,10 +47,10 @@
   "sideEffects": false,
   "devDependencies": {
     "@types/bun": "latest",
-    "@vitest/ui": "^4.0.15",
-    "vitest": "^4.0.15"
+    "@vitest/ui": "^4.1.10",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

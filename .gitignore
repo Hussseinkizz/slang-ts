@@ -1,5 +1,6 @@
 # dependencies (bun install)
 node_modules
+bun.lock
 
 # output
 out
@@ -37,3 +38,4 @@ backup
 .bak
 trash
 #demo
+AGENTS.md
