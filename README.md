@@ -38,6 +38,12 @@ npm i slang-ts
 
 All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
+## New in v0.0.9
+
+- **SafeTry**: unwraps nested Result, Option, and Atom values into one result; nested failures now become the outer `Err`, while plain object properties and array elements stay unchanged.
+- **Package types**: bundled declarations work with strict NodeNext consumers, so importing the package no longer exposes invalid declaration paths.
+- **Build tooling**: tsdown and TypeScript 7 build JavaScript and bundled types together.
+
 ## New in v0.0.8
 
 - **Signal**: a simple on/off trigger that fires once and stays fired; use it to make something start only after something else finishes.
@@ -283,36 +289,59 @@ Useful when values come from different functions with inconsistent return types 
 
 ### SafeTry
 
-Wraps potentially throwing functions in try-catch, returning a `Result<T, string>`. Always needs to be awaited as its async.
+Runs sync or async functions and captures failures as `Err<string>`. Always await it. Nested Result, Option, and Atom values resolve to one `Result`: `Ok` and `Some` unwrap until a plain value appears, `Err` stops with its error normalized through `String`, `None` becomes `Err("Option was None")`, and Atom becomes its description.
 
 ```ts
-import { safeTry } from "slang-ts";
+import { safeTry, Ok, Err, option, atom, println, type Result } from "slang-ts";
 
-const result = await safeTry(() => {
-  if (denom === 0) throw new Error("Cannot divide by zero");
-  return num / denom;
-});
+// Inferred type is Promise<Result<number, string>>, not nested Results.
+const pending: Promise<Result<number, string>> = safeTry(() => Ok(Ok(42)));
+const nested = await pending; // Ok(42)
+if (nested.isOk) println(nested.value); // 42
 
-if (result.isOk) {
-  println("Result:", result.value);
-} else {
-  println("Error:", result.error);
-}
+const failed = await safeTry(() => Ok(Ok(Err("Not found")))); // Err("Not found")
+if (failed.isErr) println(failed.error); // "Not found"
 
-// Async functions work the same way
-const data = await safeTry(async () => {
-  const res = await fetch("/api/user");
-  return res.json();
-});
+const mixed = await safeTry(() => Ok(option(Ok(atom("ready")))));
+// Ok("ready"); inferred success value is the literal "ready".
+if (mixed.isOk) println(mixed.value); // "ready"
 
-if (data.isOk) {
-  println("User:", data.value);
-}
+const missing = await safeTry(() => Ok(option(null))); // Err("Option was None")
+if (missing.isErr) println(missing.error);
 
-// Re-throw critical errors instead of capturing
+const caught = await safeTry(async () => {
+  throw new Error("Could not load profile");
+}); // Err("Could not load profile")
+if (caught.isErr) println(caught.error);
+```
+
+Only the returned wrapper chain unwraps. Plain object properties and array elements stay as supplied. Only the callback's return is awaited; a Promise inside `Ok` or `Some` stays a Promise.
+
+```ts
+import { safeTry, Ok, println } from "slang-ts";
+
+const payload = { result: Ok(42), items: [Ok(7)] };
+const plain = await safeTry(() => payload); // Ok(payload), same object
+if (plain.isOk) println(plain.value === payload); // true
+
+const innerPromise = Promise.resolve(42);
+const wrapped = await safeTry(() => Ok(innerPromise));
+// Ok(innerPromise), success value stays Promise<number>.
+if (wrapped.isOk) println(wrapped.value === innerPromise); // true
+```
+
+`{ throw: true }` rethrows errors caught while running the callback or reading its returned wrappers. Returned `Err` values still return normally. A circular wrapper chain returns `Err("Cannot resolve a circular value")`, including with `{ throw: true }`.
+
+```ts
+import { safeTry, Ok, Err, println } from "slang-ts";
+
+const returned = await safeTry(() => Ok(Err("Not found")), { throw: true });
+if (returned.isErr) println(returned.error); // "Not found"
+
 await safeTry(() => {
-  throw new Error("Critical!");
-}, { throw: true });
+  throw new Error("Critical failure");
+}, { throw: true }).catch((error: Error) => println(error.message));
+// "Critical failure": the call rejects instead of returning Err.
 ```
 
 ### Pipe
@@ -640,6 +669,21 @@ channel.when({
 ## Code Samples
 
 See [example.ts](https://github.com/Hussseinkizz/slang/blob/main/example.ts) for usage of currently implemented methods.
+
+## Development
+
+Install project dependencies with Bun, then build:
+
+```bash
+bun install
+bun run build
+```
+
+The build runs tests, checks types with TypeScript 7.0.2, then uses tsdown 0.23.1 to produce minified ESM at `dist/index.js` and bundled types at `dist/index.d.ts`. Package imports keep the same entry points. tsdown currently marks its TypeScript 7 integration as experimental; the project build passes with this setup.
+
+For building, tsdown requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. This is a build-tool requirement, not a new runtime requirement for Slang consumers.
+
+Packaged output passes strict consumer checks with TypeScript 5.9.3 and 7.0.2 under both NodeNext and Bundler resolution, including declaration checking. See [migration context](context.md) for verification details.
 
 ## Contributing
 

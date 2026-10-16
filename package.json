@@ -1,12 +1,16 @@
 {
   "name": "slang-ts",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Functional programming library for TypeScript: Option, Result, pattern matching, and async primitives",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "types": "dist/index.d.ts",
   "files": [
@@ -17,7 +21,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
-    "build": "bun run test && bun run typecheck && bun run bun-build.ts && tsc -p tsconfig.build.json"
+    "build": "bun run test && bun run typecheck && tsdown"
   },
   "homepage": "https://github.com/Hussseinkizz/slang#readme",
   "repository": {
@@ -60,9 +64,11 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@vitest/ui": "^4.1.10",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "tsdown": "0.23.1",
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3 || ^7.0.2"
   }
 }
