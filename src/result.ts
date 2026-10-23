@@ -5,6 +5,8 @@ declare const __result__: unique symbol;
 export type Ok<T> = {
   type: "Ok";
   value: T;
+  /** Optional description of the success, such as a message to show the user. */
+  readonly message?: string;
   readonly isOk: true;
   readonly isErr: false;
   readonly [__result__]: true;
@@ -59,14 +61,18 @@ export interface ResultMethods<T> {
 /**
  * Creates a new, successful result.
  * @param value Value of the result
+ * @param message Optional description of the success; omitted values leave no `message` property
  * @example
  * const a = Ok("hello");
  * typeof a; // Ok<"hello">
+ * const b = Ok({ id: 1 }, "Project created");
+ * b.message; // "Project created"
  */
-export function Ok<T>(value: T): Ok<T> & ResultMethods<T> {
+export function Ok<T>(value: T, message?: string): Ok<T> & ResultMethods<T> {
   const ok = Object.freeze({
     type: "Ok",
     value,
+    ...(message === undefined ? {} : { message }),
     isOk: true,
     isErr: false,
   } as Ok<T>);

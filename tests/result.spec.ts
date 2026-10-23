@@ -31,6 +31,33 @@ describe("Result", () => {
     });
   });
 
+  describe("Ok message", () => {
+    it("keeps a success message passed as the second argument", () => {
+      const result = Ok({ id: 1 }, "Project created");
+      expect(result.isOk).toBe(true);
+      expect(result.value).toEqual({ id: 1 });
+      expect(result.message).toBe("Project created");
+    });
+
+    it("adds no message property when none is given", () => {
+      const result = Ok(42);
+      expect("message" in result).toBe(false);
+      expect(result.message).toBeUndefined();
+    });
+
+    it("keeps the message when andThen returns the original result", () => {
+      // Returning undefined hands back the original result, as andThen documents.
+      const result = Ok(5, "Counted").andThen(() => undefined) as unknown as Result<number, string>;
+      expect(result.isOk && result.message).toBe("Counted");
+    });
+
+    it("drops the message when andThen produces a new value", () => {
+      const result = Ok(5, "Counted").andThen((x) => x * 2) as Result<number, string>;
+      expect(result.isOk && result.value).toBe(10);
+      expect(result.isOk && result.message).toBeUndefined();
+    });
+  });
+
   describe("Err creation", () => {
     it("creates Err with string error", () => {
       const result = Err("something went wrong");

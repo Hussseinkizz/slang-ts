@@ -38,6 +38,10 @@ npm i slang-ts
 
 All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
+## New in v0.0.10
+
+- **Ok messages**: `Ok(value, message?)` keeps an optional success message on the result, such as text to show the user. Results without one have no `message` property.
+
 ## New in v0.0.9
 
 - **SafeTry**: unwraps nested Result, Option, and Atom values into one result; nested failures now become the outer `Err`, while plain object properties and array elements stay unchanged.
@@ -134,7 +138,15 @@ const user = await fetchUser("123");
 if (user.isOk) {
   println("User:", user.value.name);
 }
+
+// Optional success message as the second argument
+const saved = Ok({ id: "123" }, "Profile saved");
+if (saved.isOk) {
+  println(saved.message); // "Profile saved"
+}
 ```
+
+`andThen` and `safeTry` return new results, so a message stays with the value it described.
 
 ### Expect
 
