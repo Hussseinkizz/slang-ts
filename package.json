@@ -1,6 +1,6 @@
 {
   "name": "slang-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Functional programming library for TypeScript: Option, Result, pattern matching, and async primitives",
   "type": "module",
   "main": "dist/index.js",
@@ -21,7 +21,9 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
-    "build": "bun run test && bun run typecheck && tsdown"
+    "build": "tsdown",
+    "export": "bun run test && bun run typecheck && bun run build",
+    "prepublishOnly": "bun run export"
   },
   "homepage": "https://github.com/Hussseinkizz/slang#readme",
   "repository": {

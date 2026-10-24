@@ -38,9 +38,10 @@ npm i slang-ts
 
 All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
 
-## New in v0.0.10
+## New in v0.1.1
 
-- **Ok messages**: `Ok(value, message?)` keeps an optional success message on the result, such as text to show the user. Results without one have no `message` property.
+- **Ok messages**: `Ok(value, message?)` keeps an optional success message on the result, such as text to show the user. Results without one have no `message` property. (0.1.0 was published without this change; use 0.1.1 or later.)
+- **Publishing**: `npm publish` now runs `bun run export` first (tests, type check, then build), so the package always ships a fresh build.
 
 ## New in v0.0.9
 
@@ -684,14 +685,14 @@ See [example.ts](https://github.com/Hussseinkizz/slang/blob/main/example.ts) for
 
 ## Development
 
-Install project dependencies with Bun, then build:
+Install project dependencies with Bun, then export:
 
 ```bash
 bun install
-bun run build
+bun run export
 ```
 
-The build runs tests, checks types with TypeScript 7.0.2, then uses tsdown 0.23.1 to produce minified ESM at `dist/index.js` and bundled types at `dist/index.d.ts`. Package imports keep the same entry points. tsdown currently marks its TypeScript 7 integration as experimental; the project build passes with this setup.
+`export` runs the tests, checks types with TypeScript 7.0.2, then runs `bun run build`, which uses tsdown 0.23.1 to produce minified ESM at `dist/index.js` and bundled types at `dist/index.d.ts`. `npm publish` runs `export` first through `prepublishOnly`, so a release never ships a stale `dist/`. Package imports keep the same entry points. tsdown currently marks its TypeScript 7 integration as experimental; the project build passes with this setup.
 
 For building, tsdown requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. This is a build-tool requirement, not a new runtime requirement for Slang consumers.
 

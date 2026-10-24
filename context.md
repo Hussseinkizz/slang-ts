@@ -12,7 +12,7 @@ The user approved migrating Slang's builder and fixing this issue. The chosen ap
 
 ## 2. Build and package contract
 
-`bun run build` runs the existing tests, checks types, then runs tsdown. The output remains ESM at `dist/index.js`; types are bundled at `dist/index.d.ts`. `package.json` explicitly exports the type entry before the import and default entries. No CommonJS output is added.
+`bun run export` runs the existing tests, checks types, then runs `bun run build` (tsdown). `prepublishOnly` runs `export`, so `npm publish` always builds fresh. The output remains ESM at `dist/index.js`; types are bundled at `dist/index.d.ts`. `package.json` explicitly exports the type entry before the import and default entries. No CommonJS output is added.
 
 The package declares TypeScript `^5.9.3 || ^7.0.2` consumer support. Strict consumer checks against the actual package artifact pass with TypeScript 5.9.3 and 7.0.2 under both NodeNext and Bundler resolution, with `skipLibCheck: false`. Negative type assertions also pass.
 
