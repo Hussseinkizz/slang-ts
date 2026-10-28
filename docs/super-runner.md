@@ -42,9 +42,24 @@ runner returns that `Err` and does not start the rest.
 
 ### All
 
-All kicked off at once; the result is keyed by name. Plain `Promise.all` rejects on the first
-failure, but the other requests keep running. Cancelling them means owning a controller and a
-`catch`:
+All kicked off at once; the result is keyed by name. A runner does it as configuration and returns
+one `Result`:
+
+```ts
+const parallel = superRunner({
+  type: "all",
+  runners: {
+    user: sp(getUser),
+    posts: sp(getPosts),
+    settings: sp(getSettings),
+  },
+});
+
+const combined = await parallel.start(); // Ok({ user, posts, settings })
+```
+
+Without it, plain `Promise.all` rejects on the first failure, but the other requests keep running.
+Cancelling them means owning a controller and a `catch`:
 
 ```ts
 async function loadDashboard() {
@@ -60,21 +75,6 @@ async function loadDashboard() {
     throw error;
   }
 }
-```
-
-A runner does it as configuration and returns one `Result`:
-
-```ts
-const parallel = superRunner({
-  type: "all",
-  runners: {
-    user: sp(getUser),
-    posts: sp(getPosts),
-    settings: sp(getSettings),
-  },
-});
-
-const combined = await parallel.start(); // Ok({ user, posts, settings })
 ```
 
 `all` fails fast on the first failure and aborts the remaining children.

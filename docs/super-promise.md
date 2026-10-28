@@ -28,7 +28,30 @@ For simple work that needs none of that, a plain promise is enough.
 
 ### A timeout and retries
 
-Plain TypeScript puts the policy in the call site: a controller and timer per attempt, plus a loop
+`superPromise` takes the policy as options and settles into a `Result`:
+
+```ts
+import { superPromise, println } from "slang-ts";
+
+type User = { name: string };
+
+const result = await superPromise(
+  async (signal) => {
+    const response = await fetch("/api/user", { signal });
+    if (!response.ok) throw new Error("Could not load user");
+    return (await response.json()) as User;
+  },
+  { timeout: 5000, retry: 2 }, // 3 attempts total; timeouts are not retried
+);
+
+if (result.isOk) {
+  println("User:", result.value);
+} else {
+  println("Failed:", result.error);
+}
+```
+
+Without it, the same policy lives in the call site: a controller and timer per attempt, plus a loop
 that decides what may be retried.
 
 ```ts
@@ -50,27 +73,6 @@ async function loadUserWithRetry(url: string, attempts = 3): Promise<User> {
     }
   }
   throw new Error("Could not load user");
-}
-```
-
-`superPromise` takes the same policy as options and settles into a `Result`:
-
-```ts
-import { superPromise, println } from "slang-ts";
-
-const result = await superPromise(
-  async (signal) => {
-    const response = await fetch("/api/user", { signal });
-    if (!response.ok) throw new Error("Could not load user");
-    return (await response.json()) as User;
-  },
-  { timeout: 5000, retry: 2 }, // 3 attempts total; timeouts are not retried
-);
-
-if (result.isOk) {
-  println("User:", result.value);
-} else {
-  println("Failed:", result.error);
 }
 ```
 

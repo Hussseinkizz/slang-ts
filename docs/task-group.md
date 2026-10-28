@@ -20,7 +20,25 @@ If a single task needs a timeout or retry, configure the task. Use the group for
 
 ## How to use it
 
-A concurrency limit is a queue with a counter. Hand-rolled, it looks like this:
+A group carries the concurrency and spacing policies and shares them across tasks:
+
+```ts
+import { superPromise, taskGroup, superRunner } from "slang-ts";
+
+const api = taskGroup("upstream-api", { concurrency: 3, throttle: 200 });
+
+const runner = superRunner({
+  type: "all",
+  runners: {
+    users: superPromise(fetchUsers, { group: api }),
+    posts: superPromise(fetchPosts, { group: api }),
+  },
+});
+
+await runner.start();
+```
+
+Without it, a concurrency limit is a queue with a counter, and spacing starts adds a timer on top:
 
 ```ts
 function createLimiter(limit: number) {
@@ -43,24 +61,6 @@ function createLimiter(limit: number) {
 
 const limit = createLimiter(3);
 await Promise.all(urls.map((url) => limit(() => fetch(url))));
-```
-
-Spacing starts adds a timer on top. A group carries both policies and shares them across tasks:
-
-```ts
-import { superPromise, taskGroup, superRunner } from "slang-ts";
-
-const api = taskGroup("upstream-api", { concurrency: 3, throttle: 200 });
-
-const runner = superRunner({
-  type: "all",
-  runners: {
-    users: superPromise(fetchUsers, { group: api }),
-    posts: superPromise(fetchPosts, { group: api }),
-  },
-});
-
-await runner.start();
 ```
 
 The same group can be shared across runners:

@@ -43,9 +43,24 @@ println(computations);   // 1
 ### Async functions
 
 For an async function, the Promise is the cached value. Concurrent calls with the same arguments
-wait on the same call.
+wait on the same call. `memoized` keeps the Promise and the eviction together:
 
-A plain cache has to store the in-flight Promise and remove it if the request fails:
+```ts
+let requests = 0;
+
+const loadUser = memoized(async (id: number) => {
+  requests += 1;
+  const response = await fetch(`/api/users/${id}`);
+  if (!response.ok) throw new Error("Could not load user");
+  return (await response.json()) as { name: string };
+});
+
+const [first, second] = await Promise.all([loadUser(7), loadUser(7)]);
+println(requests); // 1
+println(first === second); // true
+```
+
+Without it, a plain cache has to store the in-flight Promise and remove it if the request fails:
 
 ```ts
 type User = { name: string };
@@ -66,23 +81,6 @@ function loadUser(id: number): Promise<User> {
   });
   return request;
 }
-```
-
-`memoized` keeps the Promise and the eviction together:
-
-```ts
-let requests = 0;
-
-const loadUser = memoized(async (id: number) => {
-  requests += 1;
-  const response = await fetch(`/api/users/${id}`);
-  if (!response.ok) throw new Error("Could not load user");
-  return (await response.json()) as { name: string };
-});
-
-const [first, second] = await Promise.all([loadUser(7), loadUser(7)]);
-println(requests); // 1
-println(first === second); // true
 ```
 
 A rejected Promise is removed from the cache, so a later call runs `fn` again. The call that

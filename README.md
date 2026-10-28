@@ -111,32 +111,7 @@ For the current API in one file, see [example.ts](https://github.com/Hussseinkiz
 
 ### Load a value that can fail: SafeTry + Result
 
-A boundary often mixes failures: a lookup that throws, a parser that rejects a value, an optional result. Without `safeTry`, the caller has to catch the throw and still branch on the value.
-
-Plain TypeScript:
-
-```ts
-type Role = "admin" | "member";
-
-function loadRole(): Role {
-  const saved = localStorage.getItem("role");
-  if (saved === null) throw new Error("No role saved");
-  if (saved !== "admin" && saved !== "member") throw new Error("Unknown role");
-  return saved;
-}
-
-try {
-  const role = loadRole();
-  console.log("Role:", role);
-} catch (error) {
-  console.log(
-    "Could not load role:",
-    error instanceof Error ? error.message : "Unknown error",
-  );
-}
-```
-
-With `safeTry`, the lookup can still throw and the parser can return `Err`; both arrive as one `Result`:
+A boundary often mixes failures: a lookup that throws, a parser that rejects a value, an optional result. `safeTry` brings them into one `Result`:
 
 ```ts
 import { Err, Ok, safeTry, type Result, println } from "slang-ts";
@@ -159,6 +134,29 @@ if (role.isOk) {
   println("Role:", role.value);
 } else {
   println("Could not load role:", role.error);
+}
+```
+
+Without it, the caller has to catch the throw and still branch on the value:
+
+```ts
+type Role = "admin" | "member";
+
+function loadRole(): Role {
+  const saved = localStorage.getItem("role");
+  if (saved === null) throw new Error("No role saved");
+  if (saved !== "admin" && saved !== "member") throw new Error("Unknown role");
+  return saved;
+}
+
+try {
+  const role = loadRole();
+  console.log("Role:", role);
+} catch (error) {
+  console.log(
+    "Could not load role:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
 }
 ```
 

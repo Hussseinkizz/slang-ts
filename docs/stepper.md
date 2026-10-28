@@ -32,30 +32,7 @@ reload, persist it yourself; the stepper keeps memory only.
 
 ## How to use it
 
-A basic history is a stack and a cursor:
-
-```ts
-type Screen = { screen: string };
-type Step = { key: string; value: Screen };
-
-const history: Step[] = [];
-let cursor = -1;
-
-function commit(step: Step) {
-  history.splice(cursor + 1); // drop the forward branch
-  history.push(step);
-  cursor = history.length - 1;
-}
-
-function back() {
-  if (cursor <= 0) throw new Error("No previous step");
-  cursor -= 1;
-  return history[cursor];
-}
-```
-
-That is the easy part. Duplicate keys, a bounded history, and rebuilding an evicted step are the
-parts that grow around it. `createStepper` keeps those rules together:
+`createStepper` keeps the history rules together:
 
 ```ts
 import { createStepper, println } from "slang-ts";
@@ -75,6 +52,29 @@ await wizard.next((_previous, make) =>
 println(wizard.current?.key); // profile
 println(wizard.prev().panic().key); // welcome
 println(wizard.size); // 2
+```
+
+Without it, a basic history is a stack and a cursor. That is the easy part; duplicate keys, a
+bounded history, and rebuilding an evicted step are the parts that grow around it:
+
+```ts
+type Screen = { screen: string };
+type Step = { key: string; value: Screen };
+
+const history: Step[] = [];
+let cursor = -1;
+
+function commit(step: Step) {
+  history.splice(cursor + 1); // drop the forward branch
+  history.push(step);
+  cursor = history.length - 1;
+}
+
+function back() {
+  if (cursor <= 0) throw new Error("No previous step");
+  cursor -= 1;
+  return history[cursor];
+}
 ```
 
 `previous` is `undefined` on the first call and the current step after that. `next` is always

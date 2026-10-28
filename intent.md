@@ -219,7 +219,7 @@ rechecked. `docs/superpromises.spec.md` and `docs/internal/` were not touched.
 
 Contrast examples were then added to the reference pages where the plain version carries real
 boilerplate: SafeTry, SuperPromise, SuperRunner, taskGroup, createStepper, and memoized. Each
-shows the plain TypeScript version first and the Slang version second. Thin wrappers such as
+shows the Slang version first and the plain TypeScript version second. Thin wrappers such as
 Option, Result, Signal, Atom, Channel, and the collection helpers were left alone; a side-by-side
 there would be noise rather than relief.
 

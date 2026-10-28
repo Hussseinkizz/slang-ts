@@ -24,31 +24,7 @@ the boundary where several shapes meet.
 ## How to use it
 
 The boundary is easiest to see next to the code it replaces. A lookup can throw; a parser can
-reject a value. Plain TypeScript makes the caller handle both:
-
-```ts
-type Role = "admin" | "member";
-
-function loadRole(): Role {
-  const saved = localStorage.getItem("role");
-  if (saved === null) throw new Error("No role saved");
-  if (saved !== "admin" && saved !== "member") throw new Error("Unknown role");
-  return saved;
-}
-
-try {
-  const role = loadRole();
-  console.log("Role:", role);
-} catch (error) {
-  console.log(
-    "Could not load role:",
-    error instanceof Error ? error.message : "Unknown error",
-  );
-}
-```
-
-With `safeTry`, the lookup can still throw and the parser can return `Err`; both arrive as one
-`Result`:
+reject a value. `safeTry` brings both into one `Result`:
 
 ```ts
 import { Err, Ok, safeTry, type Result, println } from "slang-ts";
@@ -71,6 +47,29 @@ if (role.isOk) {
   println("Role:", role.value);
 } else {
   println("Could not load role:", role.error);
+}
+```
+
+Without it, the caller handles the throw and the rejected value separately:
+
+```ts
+type Role = "admin" | "member";
+
+function loadRole(): Role {
+  const saved = localStorage.getItem("role");
+  if (saved === null) throw new Error("No role saved");
+  if (saved !== "admin" && saved !== "member") throw new Error("Unknown role");
+  return saved;
+}
+
+try {
+  const role = loadRole();
+  console.log("Role:", role);
+} catch (error) {
+  console.log(
+    "Could not load role:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
 }
 ```
 
