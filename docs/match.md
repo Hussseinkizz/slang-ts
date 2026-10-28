@@ -47,7 +47,8 @@ println("Using port:", port); // parsed port, or 3000
 ### Error categories
 
 Collection chains (`list`, `struct`, `sets`, `Ok.iterate`) carry a
-`.category` string on failure. Branch on it with `matchAll`:
+`.category` string on failure. Use `matchAll` to turn a known category
+into a user-facing message:
 
 ```ts
 import { list, matchAll, println } from "slang-ts";
@@ -63,7 +64,12 @@ const message = matchAll(failed.category, {
 println(message); // "That page is out of range."
 ```
 
-`matchAll` needs the `_` fallback since there's no finite set of category strings to exhaust.
+For anything you can't handle with a fallback, check `.category` first
+and panic with the category itself — once you panic, a custom user
+message is never read. See [list](list.md#failures-and-categories).
+
+`matchAll` needs the `_` fallback since there's no finite set of category
+strings to exhaust.
 
 ### Literals and atoms
 

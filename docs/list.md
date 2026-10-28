@@ -119,8 +119,16 @@ and the original index.
 
 ```ts
 const failed = list([1, 2, 3]).range(1, 99).take(1);
-println(failed.category); // "OUT_OF_BOUNDS"
-println(failed.else([])); // []
+
+// Check the category before deciding how to recover.
+// A specific miss gets a fallback; anything else panics
+// with the category itself — once you panic, a custom
+// user message is never read.
+if (failed.category === "OUT_OF_BOUNDS") {
+  println(failed.else([])); // []
+} else {
+  failed.panic(failed.category);
+}
 
 println(list([10, 20, 30]).take(2).panic()); // [10, 20]
 // list([10, 20, 30]).take(9).panic("Page is out of range"); // throws
