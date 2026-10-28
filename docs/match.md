@@ -44,6 +44,27 @@ const port = match(maybePort, {
 println("Using port:", port); // parsed port, or 3000
 ```
 
+### Error categories
+
+Collection chains (`list`, `struct`, `sets`, `Ok.iterate`) carry a
+`.category` string on failure. Branch on it with `matchAll`:
+
+```ts
+import { list, matchAll, println } from "slang-ts";
+
+const failed = list([1, 2, 3]).range(1, 99).take(1);
+
+const message = matchAll(failed.category, {
+  OUT_OF_BOUNDS: () => "That page is out of range.",
+  INVALID_INPUT: () => "That input isn't an array.",
+  _: (category) => `Unexpected failure: ${category}`,
+});
+
+println(message); // "That page is out of range."
+```
+
+`matchAll` needs the `_` fallback since there's no finite set of category strings to exhaust.
+
 ### Literals and atoms
 
 ```ts

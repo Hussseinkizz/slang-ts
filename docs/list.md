@@ -64,10 +64,10 @@ println(list(wrapped).take(2).else([])); // [1, 2]
 ```ts
 const users = [{ id: 1 }, { id: 2 }];
 
-const second = list(users).get(1, null).else(null);
+const second = list(users).get(1, null);
 println(second?.id); // 2
 
-const missing = list(users).get(9, null).else(null);
+const missing = list(users).get(9, null);
 println(missing); // null
 ```
 

@@ -39,10 +39,10 @@ const config = {
   debug: false,
 };
 
-const port = struct(config).get(["server", "port"], 3000).else(3000);
+const port = struct(config).get(["server", "port"], 3000);
 println(port); // 8080
 
-const timeout = struct(config).get(["server", "timeout"], 5000).else(5000);
+const timeout = struct(config).get(["server", "timeout"], 5000);
 println(timeout); // 5000
 
 const server = struct(config).get("server").else({ host: "localhost", port: 3000 });
