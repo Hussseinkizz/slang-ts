@@ -1,8 +1,10 @@
 # slang-ts
 
-Functional programming library for TypeScript.
+An opinionated functional programming library for TypeScript.
 
-A collection of utilities and other cool programming stuff brought over from languages like Rust.
+A collection of utilities and mechanisms brought over from languages like Rust and Erlang.
+
+Each utility is deliberately chosen and built from scratch with zero dependencies.
 
 ## Install
 
@@ -29,7 +31,6 @@ npm i slang-ts
 - [x] Zip, Unzip, zipWith
 - [x] Panic
 - [x] println (environment-aware logging)
-- [x] setEnvironment (logging mode, custom logger)
 - [x] Signal (lifecycle trigger)
 - [x] SuperPromise (abort, reject, resolve, defer)
 - [x] SuperRunner (sequence, all, race)
@@ -41,816 +42,209 @@ npm i slang-ts
 - [x] memoized (argument-based caching)
 - [x] taskGroup (shared concurrency and start spacing)
 - [x] createStepper (bounded keyed history)
-- [x] scheduleMicrotask (internal scheduling helper)
 
-All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
+All utilities are covered by the test suite. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests).
 
-## New in v0.2.0
+## What's new in 0.0.1 – 0.2.0
 
-- **list**: strict indexed collections with `get`, `take`, `skip`, `range`, `chunk`, `count`, and `prune`.
-- **struct**: safe record access, `pick`/`omit`/`merge` shaping, and `countBy`/`keyBy` grouping.
-- **sets**: membership and set algebra, including arrays, iterables, Maps (keys), and object keys.
-- **Ok.iterate**: lazy `map`, `filter`, `flatMap`, `take`, `drop`, `chunk`, `reduce`, `count`, and `toArray` on a successful Result.
-- **memoized**: argument-based caching with identity semantics for objects and rejected-Promise eviction.
-- **taskGroup**: shared concurrency and start spacing for SuperPromises, with retries reacquiring admission.
-- **createStepper**: bounded keyed step history with backward recovery and explicit `prev` resolution.
-- **Typed adapters**: `list`, `struct`, and `sets` keep their element, row, and key types; `get` fallbacks widen the result type correctly.
+Slang grew from Option, Result, and SafeTry into a toolkit: `match` and `pipe` for flow, `atom`, `to`,
+and `zip` for composition, and `list`, `struct`, `sets`, `iterate`, and `memoized` for data. Async
+work covers `SuperPromise`, `SuperRunner`, `taskGroup`, `Signal`, and `Channel`, with `createStepper`
+for keyed history.
 
-## New in v0.1.1
+Optional `Ok` success messages arrived in 0.1.1. Version 0.2.0 added the collection utilities,
+`createStepper`, and shared task scheduling.
 
-- **Ok messages**: `Ok(value, message?)` keeps an optional success message on the result, such as text to show the user. Results without one have no `message` property. (0.1.0 was published without this change; use 0.1.1 or later.)
-- **Publishing**: `npm publish` now runs `bun run export` first (tests, type check, then build), so the package always ships a fresh build.
+## Imports
 
-## New in v0.0.9
-
-- **SafeTry**: unwraps Option and Atom values into one result; a Result never nests inside another Result, and plain object properties and array elements stay unchanged.
-- **Package types**: bundled declarations work with strict NodeNext consumers, so importing the package no longer exposes invalid declaration paths.
-- **Build tooling**: tsdown and TypeScript 7 build JavaScript and bundled types together.
-
-## New in v0.0.8
-
-- **Signal**: a simple on/off trigger that fires once and stays fired; use it to make something start only after something else finishes.
-- **println now respects the environment**: `setEnvironment("production")` (or `"prod"`) turns it into a no-op, so dev logging never reaches prod logs; short forms `dev`/`prod` accepted, and it appends a real newline. Pass `{ printFn }` to route println through an existing logger instead.
-- **SuperPromise**: native JavaScript promises plus wait, retry, time out, cancel, settling into `Ok`/`Err`; use it for any async operation that needs more than plain promise.
-- **SuperRunner**: `Promise.all` and `Promise.race` grown up: run several SuperPromises in order, in parallel, or take first to finish.
-- **Channel**: a simple event bus between parts of your app that don't need to know each other; use it to broadcast things like "user created" or "workflow completed" without wiring components together.
-
-## How It Works
-
-Import utilities individually or together:
+Import only what you use:
 
 ```ts
-// Individual imports
-import { option } from "slang-ts";
-import { Ok, Err } from "slang-ts";
-
-// Or import multiple at once
 import { option, Ok, Err, atom, match } from "slang-ts";
+```
 
-// Or import under namespace (not so performant)
+Or import the namespace:
+
+```ts
 import * as slang from "slang-ts";
 
 slang.println("Hello world!");
 ```
 
-### Option
+## Explore by category
 
-Wraps values that may or may not be present. Returns `Some<T>` for truthy values, `None` for null, undefined, empty strings, NaN, or Infinity. Note that `0` and `false` are truthy as these are usually intentional.
+### Error handling and flow
+
+Turn failures into values, match them, and compose steps.
+
+[Option](docs/option.md) · [Result](docs/result.md) · [SafeTry](docs/safe-try.md) · [Match](docs/match.md) · [Options](docs/match.md#options) · [Pipe](docs/pipe.md)
+
+### Composition and conversion
+
+Unique named values, converters, and aligned collections.
+
+[Atom](docs/atom.md) · [To](docs/to.md) · [Zip](docs/zip.md)
+
+### Collections and data
+
+Strict collections, safe record access, set algebra, lazy pipelines, and caching.
+
+[list](docs/list.md) · [struct](docs/struct.md) · [sets](docs/sets.md) · [Ok.iterate](docs/iterate.md) · [memoized](docs/memoized.md)
+
+### Async and lifecycle
+
+Timeouts, retries, cancellation, concurrency, and event wiring.
+
+[SuperPromise](docs/super-promise.md) · [SuperRunner](docs/super-runner.md) · [taskGroup](docs/task-group.md) · [Signal](docs/signal.md) · [Channel](docs/channel.md)
+
+### Small utilities
+
+Fail fast, log quietly, and navigate keyed history.
+
+[Panic](docs/panic.md) · [println](docs/logging.md) · [createStepper](docs/stepper.md)
+
+Full index: [docs](docs/README.md).
+
+For the current API in one file, see [example.ts](https://github.com/Hussseinkizz/slang/blob/main/example.ts).
+
+## Real-world examples
+
+### Load a value that can fail: SafeTry + Result
+
+A boundary often mixes failures: a lookup that throws, a parser that rejects a value, an optional result. Without `safeTry`, the caller has to catch the throw and still branch on the value.
+
+Plain TypeScript:
 
 ```ts
-import { option } from "slang-ts";
+type Role = "admin" | "member";
 
-const a = option("hi");      // Some("hi")
-const b = option(null);      // None
-const c = option(0);         // Some(0) - zero is truthy!
-const d = option("");        // None
-const e = option(false);     // Some(false) - false is truthy!
-
-if (a.isSome) {
-  println("Value:", a.value);
+function loadRole(): Role {
+  const saved = localStorage.getItem("role");
+  if (saved === null) throw new Error("No role saved");
+  if (saved !== "admin" && saved !== "member") throw new Error("Unknown role");
+  return saved;
 }
 
-if (b.isNone) {
-  println("No value");
+try {
+  const role = loadRole();
+  console.log("Role:", role);
+} catch (error) {
+  console.log(
+    "Could not load role:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
 }
 ```
 
-### Result
-
-Represents operations that can succeed or fail. Returns `Ok<T>` on success or `Err<E>` on failure with typed error payload.
+With `safeTry`, the lookup can still throw and the parser can return `Err`; both arrive as one `Result`:
 
 ```ts
-import { Ok, Err, type Result } from "slang-ts";
+import { Err, Ok, safeTry, type Result, println } from "slang-ts";
 
-// Simple function returning Result
-function divide(a: number, b: number): Result<number, string> {
-  if (b === 0) return Err("Cannot divide by zero");
-  return Ok(a / b);
+type Role = "admin" | "member";
+
+function parseRole(value: string): Result<Role, string> {
+  return value === "admin" || value === "member"
+    ? Ok(value)
+    : Err("Unknown role");
 }
 
-const result = divide(10, 2);
+const role = await safeTry(() => {
+  const saved = localStorage.getItem("role");
+  if (saved === null) throw new Error("No role saved");
+  return parseRole(saved);
+});
 
-if (result.isOk) {
-  println("Success:", result.value); // 5
+if (role.isOk) {
+  println("Role:", role.value);
 } else {
-  println("Error:", result.error);
+  println("Could not load role:", role.error);
 }
+```
 
-// Async API example
-interface User {
-  id: string;
-  name: string;
-}
+Full detail: [SafeTry](docs/safe-try.md) and [Result](docs/result.md).
 
-async function fetchUser(id: string): Promise<Result<User, string>> {
-  try {
-    const response = await fetch(`/api/users/${id}`);
-    if (!response.ok) return Err("User not found");
-    const user = await response.json();
-    return Ok(user);
-  } catch (error) {
-    return Err("Network error");
-  }
-}
+### Call an API with a timeout and retries: SuperPromise
 
-const user = await fetchUser("123");
+The executor receives an `AbortSignal`. `timeout` aborts an attempt, `retry` repeats an ordinary
+failure, and the task settles into `Ok` or `Err`, so there is no `try`/`catch` around the await.
+
+```ts
+import { superPromise, println } from "slang-ts";
+
+const id = "123";
+
+const user = await superPromise(
+  async (signal) => {
+    const response = await fetch(`/api/users/${id}`, { signal });
+    if (!response.ok) throw new Error("User not found");
+    return (await response.json()) as { name: string };
+  },
+  { timeout: 5000, retry: 2 },
+);
+
 if (user.isOk) {
   println("User:", user.value.name);
-}
-
-// Optional success message as the second argument
-const saved = Ok({ id: "123" }, "Profile saved");
-if (saved.isOk) {
-  println(saved.message); // "Profile saved"
-}
-```
-
-`andThen` and `safeTry` return new results, so a message stays with the value it described.
-
-### Expect
-
-Unwraps values or throws with custom message. Use when failure is unrecoverable.
-
-```ts
-const personAge = option(25).expect("a person must have age!");
-println("person age", personAge); // 25
-
-// This would throw!
-// const personAge2 = option("").expect("a person must have age!");
-```
-
-### Unwrap/Else
-
-Chainable unwrapping with mandatory fallback. Must call `.else()` or throws.
-
-```ts
-const port = option(process.env.PORT).unwrap().else(3000);
-println("Using port:", port);
-
-// Function fallbacks
-const retries = option(null).unwrap().else(() => 5);
-println("Retries:", retries);
-
-// This throws! No .else() chained
-// const nothing = option(null).unwrap();
-```
-
-### andThen
-
-Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. For `Result`, a returned `Result` is passed through as it is, never wrapped again (`Ok(5).andThen(x => Ok(x * 2))` is `Ok(10)`); a returned Result whose own value is a Result panics. Returns original instance if provided transformation function returns `undefined`.
-
-```ts
-// Option - transforms Some, skips None
-option(5).andThen(x => x * 2);              // Some(10)
-option(null).andThen(x => x * 2);           // None (skipped)
-option(5).andThen(() => undefined);         // Some(5) - original
-
-// Result - transforms Ok, skips Err
-Ok(10).andThen(x => x + 5);                 // Ok(15)
-Err("fail").andThen(x => x + 5);            // Err("fail") (skipped)
-
-// Atom - transforms description (sync only)
-atom("hello").andThen(s => s.toUpperCase()); // Atom("HELLO")
-
-// Chained andThen - multiple transformations
-option(5)
-  .andThen(x => x + 1)
-  .andThen(x => x * 2)
-  .andThen(x => x.toString());              // Some("12")
-
-Ok(10)
-  .andThen(x => x * 2)
-  .andThen(x => x + 5)
-  .andThen(x => ({ value: x }));            // Ok({ value: 25 })
-
-atom("hello")
-  .andThen(s => s.toUpperCase())
-  .andThen(s => s + "!");                   // Atom("HELLO!")
-
-// Async support for Option and Result
-const data = await option(5).andThen(async x => await fetchData(x));
-
-// Error handling
-option(5).andThen(() => { throw "oops" });  // None (caught)
-Ok(5).andThen(() => { throw "oops" });      // Err("oops")
-atom("x").andThen(() => { throw "oops" });  // Panics!
-
-// Type transformation
-option(42).andThen(x => x.toString());      // Some("42")
-```
-
-### Match
-
-Exhaustive pattern matching for `Option` and `Result` types. Forces you to handle all cases. Returns the value from the matched handler.
-
-```ts
-import { match } from "slang-ts";
-
-// Matching Results - returns handler result
-const result = divide(10, 0);
-const message = match(result, {
-  Ok: (v) => `Success: ${v.value}`,
-  Err: (e) => `Failed: ${e.error}`,
-});
-println(message); // "Failed: Cannot divide by zero"
-
-// Matching Options - returns handler result
-const maybePort = option(process.env.PORT);
-const port = match(maybePort, {
-  Some: (v) => parseInt(v.value),
-  None: () => 3000,
-});
-println("Using port:", port); // Uses parsed port or default 3000
-```
-
-### MatchAll
-
-Pattern matching for primitives and atoms with required `_` fallback. Returns the value from the matched handler.
-
-```ts
-import { matchAll } from "slang-ts";
-
-// Match atoms - returns handler result
-const ready = atom("ready");
-const status = matchAll(ready, {
-  ready: () => "System is ready",
-  failed: () => "System failed",
-  _: () => "Unknown state",
-});
-println(status); // "System is ready"
-
-// Match booleans - returns handler result
-const isActive = true;
-const label = matchAll(isActive, {
-  true: () => "Active",
-  false: () => "Inactive",
-  _: () => "Unknown",
-});
-println(label); // "Active"
-```
-
-### Options
-
-Normalizes heterogeneous values (raw values, `Option`s, and `Result`s) into a single `Result`. Returns the first usable value as `Ok`, or the provided `Err` fallback if none is usable. A value is usable when its unwrapped inner value is truthy; `None`, `Err`, null, undefined, empty strings, NaN, and Infinity are skipped (note `0` and `false` are usable, matching `option()` semantics).
-
-```ts
-import { Options, option, Ok, Err } from "slang-ts";
-
-// First usable value wins
-let a = null;
-let b = option(undefined);
-let c = Ok(true);
-let d = Err("nope!");
-
-const something = Options([a, b, c, d], Err("No value!"));
-// Ok(true) - c is usable
-
-// Nothing usable -> fallback
-let e = option(null);
-const nothing = Options([a, b, e, d], Err("No value!"));
-// Err("No value!")
-
-// Raw (non-wrapped) values work too, just like a single option():
-Options([null, undefined, "hello"]);          // Ok("hello") - raw truthy wins
-Options(["", 0, "zero is skipped, 0 used"]);  // Ok("...") - skips "" first
-Options([null, undefined, ""]);               // Err("No value!") - all raw falsy
-```
-
-Useful when values come from different functions with inconsistent return types and all you care about is whether the end result is usable.
-
-### SafeTry
-
-Runs sync or async functions and captures failures as `Err<string>`. Always await it. Option and Atom values resolve to one `Result`: `Some` unwraps until a plain value appears, `None` becomes `Err("Option was None")`, and Atom becomes its description.
-
-A Result never nests inside another Result. `Ok(Ok(x))` and `Ok(Err(x))` do not compile, and `safeTry` panics if one arrives untyped.
-
-```ts
-import { safeTry, Ok, option, atom, println } from "slang-ts";
-
-// Option and Atom layers unwrap; the terminal value is inferred, never nested.
-const unwrapped = await safeTry(() => Ok(option(42)));
-if (unwrapped.isOk) println(unwrapped.value); // 42
-
-const mixed = await safeTry(() => Ok(option(atom("ready"))));
-// Ok("ready"); inferred success value is the literal "ready".
-if (mixed.isOk) println(mixed.value); // "ready"
-
-const missing = await safeTry(() => Ok(option(null))); // Err("Option was None")
-if (missing.isErr) println(missing.error);
-
-const caught = await safeTry(async () => {
-  throw new Error("Could not load profile");
-}); // Err("Could not load profile")
-if (caught.isErr) println(caught.error);
-```
-
-Only the returned wrapper chain unwraps. Plain object properties and array elements stay as supplied. Only the callback's return is awaited; a Promise inside `Ok` or `Some` stays a Promise.
-
-```ts
-import { safeTry, Ok, println } from "slang-ts";
-
-const payload = { result: Ok(42), items: [Ok(7)] };
-const plain = await safeTry(() => payload); // Ok(payload), same object
-if (plain.isOk) println(plain.value === payload); // true
-
-const innerPromise = Promise.resolve(42);
-const wrapped = await safeTry(() => Ok(innerPromise));
-// Ok(innerPromise), success value stays Promise<number>.
-if (wrapped.isOk) println(wrapped.value === innerPromise); // true
-```
-
-`{ throw: true }` rethrows errors caught while running the callback or reading its returned wrappers. Returned `Err` values still return normally. A circular wrapper chain returns `Err("Cannot resolve a circular value")`, including with `{ throw: true }`.
-
-```ts
-import { safeTry, Ok, Err, println } from "slang-ts";
-
-const returned = await safeTry(() => Err("Not found"), { throw: true });
-if (returned.isErr) println(returned.error); // "Not found"
-
-await safeTry(() => {
-  throw new Error("Critical failure");
-}, { throw: true }).catch((error: Error) => println(error.message));
-// "Critical failure": the call rejects instead of returning Err.
-```
-
-### Pipe
-
-Sequential function composition where each function receives a `Result` and returns a `Result`. Accepts plain values, Option, Result, or Atom as initial input.
-
-```ts
-import { pipe, Ok, Err, option, type Result } from "slang-ts";
-
-// Create pipeline functions
-const add = (x: number) => (res: Result<number, string>) =>
-  res.isOk ? Ok(res.value + x) : res;
-
-const multiply = (x: number) => (res: Result<number, string>) =>
-  res.isOk ? Ok(res.value * x) : res;
-
-// Basic usage
-const result = await pipe(5, add(3), multiply(2)).run();
-println("Result:", result.value); // 16
-
-// With Options as initial value
-const fromOption = await pipe(option(10), add(5)).run();
-println("From option:", fromOption.value); // 15
-
-// With callbacks and error handling
-const result = await pipe(5, add(3), multiply(2)).run({
-  onEach: ({ currentFn, prevResult }) => {
-    println("Executed:", currentFn);
-  },
-  onSuccess: (value) => println("Done:", value),
-  onError: (err) => println("Failed:", err.message),
-  allowErrors: false, // stops pipeline on first Err
-});
-```
-
-### To
-
-Converts between Slang types.
-
-```ts
-const statusAtom = atom("active").to("option");
-println("Option:", statusAtom);           // Some("active")
-
-const stateOption = option("ready").to("atom");
-println("Atom:", stateOption.description); // "ready"
-
-const errResult = option(null).to("result");
-println("Result:", errResult.type);        // "Err"
-```
-
-### Atom
-
-Creates unique, non-interned symbols with semantic descriptions. Each call produces a distinct identity. Define them in one file and import from it everywhere else, handy for env-var style constants.
-
-```ts
-import { atom } from "slang-ts";
-
-const userAtom = atom("kizz");
-const user2Atom = atom("kizz");
-
-println(userAtom === atom("kizz")); // false - non interned
-println(userAtom.description);      // "kizz"
-
-if (userAtom === user2Atom) {
-  println("all the same");
 } else {
-  println("not the same");          // This prints!
+  println("Could not load user:", user.error);
 }
 ```
 
-### Zip
+Full detail: [SuperPromise](docs/super-promise.md).
 
-Combines multiple collections element-wise into tuples.
+### Page a list and shape records: list + struct
 
-```ts
-import { zip } from "slang-ts";
-
-// Zip arrays
-const arr1 = [1, 2, 3];
-const arr2 = [4, 5, 6];
-const arr3 = [7, 8, 9];
-println(zip([arr1, arr2, arr3]));
-// [[1,4,7],[2,5,8],[3,6,9]]
-
-// Zip with fillValue
-println(zip([arr1, [10, 20]], { fillValue: 0 }));
-// [[1,10],[2,20],[3,0]]
-
-// Zip Sets with includeValues=true
-const s1 = new Set([10, 20, 30]);
-const s2 = new Set([100, 200, 300]);
-println(zip([s1, s2], { includeValues: true }));
-// [[10,100],[20,200],[30,300]]
-
-// Zip objects with includeValues=true
-const o1 = { a: 1, b: 2, c: 3 };
-const o2 = { x: 100, y: 200, z: 300 };
-println(zip([o1, o2], { includeValues: true }));
-// [[1,100],[2,200],[3,300]]
-```
-
-### ZipWith
-
-Combines collections and applies transform function to each tuple.
+`list` keeps bounds strict: a bad range fails instead of quietly returning less data. `struct`
+reads and shapes records without spreading fields you did not choose.
 
 ```ts
-import { zipWith } from "slang-ts";
-
-const arr1 = [1, 2, 3];
-const arr2 = [4, 5, 6];
-const arr3 = [7, 8, 9];
-
-println(zipWith([arr1, arr2, arr3], (t) => t.reduce((sum, x) => sum + x, 0)));
-// [12, 15, 18]
-```
-
-### Unzip
-
-Reverses zip operation, separating tuples back into arrays.
-
-```ts
-import { unzip } from "slang-ts";
-
-const arr1 = [1, 2, 3];
-const arr2 = [4, 5, 6];
-
-const zipped = zip([arr1, arr2]);
-println(unzip(zipped));
-// [[1, 2, 3], [4, 5, 6]]
-```
-
-### Panic
-
-Throws an error immediately. Use for unrecoverable failures.
-
-```ts
-import { panic } from "slang-ts";
-
-function processUser(user: User | null) {
-  if (!user) panic("User cannot be null");
-  return user.name;
-}
-
-// Guard clause pattern
-const config = loadConfig();
-if (!config.apiKey) panic("API key required");
-```
-
-### println
-
-console.log sugar that stays out of production. Prints a line (args joined, newline appended) and does nothing once `setEnvironment` puts the app in production mode. Dev chatter never leaks to prod logs. Already have an advanced logger? Hand it to `setEnvironment({ printFn })` and every println routes through it: your logging code stays exactly as it is, in every mode.
-
-```ts
-import { println, setEnvironment } from "slang-ts";
-
-setEnvironment("development"); // "dev" works too (default)
-println("name:", name);
-println("multiple", "args", "work", { too: true });
-
-setEnvironment("production"); // "prod" works too
-println("not printed in prod");
-
-// Route println through an existing logger instead, even in prod
-import { appLogger } from "./logger";
-setEnvironment({ printFn: (line) => appLogger.info(line.trimEnd()) });
-```
-
-### Signal
-
-A trigger (we call them signals) is a switch that fires once and stays fired. Flip it when you're ready, and anything waiting on it reacts. They're interchangeable with the platform's `AbortSignal`, so a signal you create can be handed to anything that already accepts one.
-
-```ts
-import { createSignal } from "slang-ts";
-
-const ready = createSignal();
-
-ready.addEventListener("abort", () => println("ready!")); // fires when the trigger goes off
-ready.fire();                                             // flip it
-```
-
-The useful part: gate work on a signal, or publish events when a lifecycle completes.
-
-```ts
-const task = superPromise(loadUser, { defer: ready }); // starts only once ready fires
-
-channel.when({
-  signal: task.done,   // task finished, success or not
-  topic: "user.loaded",
-  data: { id: userId },
-});
-```
-
-### SuperPromise
-
-Native JavaScript promises plus execution controls: wait before starting, retry when it fails, time out when it hangs, cancel from outside, `done` trigger to wire into other things. Tasks settle into `Ok` or `Err`: just check outcome, no try/catch around awaits. Library exports no short alias: alias locally when the name gets heavy: `import { superPromise as sp }`.
-
-```ts
-import { superPromise } from "slang-ts";
-
-// A fetch that gives up after 5 seconds and tries up to 3 more times
-const result = await superPromise(
-  (signal) => fetch("/api/user", { signal }),
-  { timeout: 5000, retry: 3 }
-);
-
-if (result.isOk) {
-  println("User:", result.value);
-} else {
-  println("Failed:", result.error);
-}
-```
-
-No `await` handy? Chain with `.then`; the callback receives the same `Result`:
-
-```ts
-superPromise(loadUser, { timeout: 5000 }).then((result) => {
-  if (result.isOk) {
-    println("User:", result.value);
-  } else {
-    println("Failed:", result.error);
-  }
-});
-```
-
-Need it to wait for something else first? `defer` holds execution until a signal fires; chain operations so the next starts only when the previous is done:
-
-```ts
-const config = superPromise(loadConfig);
-const user = superPromise(loadUser, { defer: config.done });
-
-const result = await user; // config runs first, then user
-```
-
-Cancel from outside, or keep retrying until you call it off:
-
-```ts
-task.abort();                                  // cancel; you get Err("Aborted")
-superPromise(fetchData, {
-  retryUntil: { signal: stopSignal, delay: 2000 }, // keep trying until stopSignal fires
-});
-```
-
-One gotcha worth knowing: a task doesn't start until you consume it (`await`, `.then()`, or a runner's `start()`), so you can wire up dependencies first and they'll run in the right order when awaited.
-
-Also handy:
-
-```ts
-const manual = superPromise<number>();  // no executor; settle it yourself
-manual.resolve(100);                    // or manual.reject(error)
-
-await superPromise(loadUser).tap((user) => println(user.name)); // observe without changing
-```
-
-### SuperRunner
-
-Same idea as `Promise.all`, `Promise.race`, and plain `await` chain, but for SuperPromises, with cancellation and clean `Result` outcomes. Use it when multiple operations are needed: run several in order, in parallel, or take first to finish. Call `start()` once and read result; calling again just hands back same result without re-running anything.
-
-```ts
-import { superRunner, superPromise as sp } from "slang-ts";
-
-// In order: steps that depend on each other; stops at the first failure
-const auth = superRunner({
-  type: "sequence",
-  runners: [sp(authenticate), sp(loadProfile), sp(loadDashboard)],
-});
-const ordered = await auth.start(); // [authResult, profileResult, dashboardResult]
-
-// In parallel: all kicked off at once; result keyed by name
-const parallel = superRunner({
-  type: "all",
-  runners: {
-    user: sp(getUser),
-    posts: sp(getPosts),
-    settings: sp(getSettings),
-  },
-});
-const combined = await parallel.start(); // { user, posts, settings }
-
-// First to finish: take whichever source responds first, cancel the rest
-const first = superRunner({
-  type: "race",
-  count: 1,
-  runners: {
-    primary: sp(fetchPrimary),
-    backup: sp(fetchBackup),
-    cache: sp(fetchCache),
-  },
-});
-const winner = await first.start(); // { cache: ... } or whichever won
-```
-
-Cancel everything with one call:
-
-```ts
-workflow.abort(); // cancels all active children
-```
-
-### Channel
-
-Channel lets parts of your app that don't know each other talk: one side publishes, another listens, no wiring between them.
-
-```ts
-import { createChannel } from "slang-ts";
-
-const channel = createChannel();
-
-const unsubscribe = channel.subscribe({ topic: "user.created" }, (event) => {
-  println("Created:", event.data);
-});
-
-channel.send({ topic: "user.created", data: user });
-unsubscribe(); // stop listening
-```
-
-Publish when a trigger goes off, a task finishing, anything at all:
-
-```ts
-channel.when({
-  signal: workflow.done,
-  topic: "workflow.completed",
-  data: { workflowId },
-});
-```
-
-## New utilities
-
-These extend the library without changing the existing APIs. A fixable collection operation returns a
-fallible chain, so the caller must finish with `.else(...)` or `.panic(...)`.
-
-### list
-
-`list` wraps a finite array and keeps bounds strict. It never clamps an invalid range; a negative
-index counts from the end, and a negative `skip` count drops items from the end.
-
-```ts
-import { list } from "slang-ts";
-
-list([10, 20, 30, 40, 50]).take(2).else([]);      // [10, 20]
-list([10, 20, 30, 40, 50]).skip(-2).else([]);     // [10, 20, 30]
-list([10, 20, 30, 40, 50]).range(1, 4).else([]);  // [20, 30, 40]
-list([10, 20, 30]).range(1, 99).code;             // "OUT_OF_BOUNDS"
-list([0, false, "", null, 5]).prune().else([]);   // [0, false, 5]
-```
-
-`get`, `take`, `skip`, `range`, `chunk`, `count` and `prune` are available. A narrowed successful
-`Ok` holding an array is accepted; an `Err` is refused.
-
-### struct
-
-`struct` reads and reshapes plain records, and aggregates collections of records.
-
-```ts
-import { struct } from "slang-ts";
-
-const user = { id: 1, name: "Ada", profile: { city: "Kampala" } };
-struct(user).get(["profile", "city"]).else("unknown"); // "Kampala"
-struct(user).pick("id", "name").else({});               // { id: 1, name: "Ada" }
-struct(user).omit("id").else({});                       // { name: "Ada", profile: ... }
-
-const rows = [{ role: "admin" }, { role: "user" }, { role: "admin" }];
-struct(rows).countBy((row) => row.role).else({});       // { admin: 2, user: 1 }
-struct(rows).keyBy((row) => row.role).else({});         // last row for each key wins
-```
-
-`get` only reads own properties, `merge` deep-merges plain objects without mutating them, and
-`prune` keeps `0` and `false` while dropping Slang's falsy values.
-
-### sets
-
-`sets` normalizes an array, iterable, `Set`, `Map` (its keys), or plain object (its keys) into
-membership operations.
-
-```ts
-import { sets } from "slang-ts";
-
-sets({ read: true, write: false }).has("write").else(false); // true
-sets([1, 2, 2, 3]).unique().else(new Set());                 // Set(1, 2, 3)
-sets([1, 2]).union([2, 3]).else(new Set());                  // Set(1, 2, 3)
-sets([1, 2, 3]).difference([2]).else(new Set());             // Set(1, 3)
-```
-
-Comparison follows native `Set` semantics: primitives by value, objects by identity. A narrowed
-successful `Ok` holding any supported input is accepted; an `Err` is refused.
-
-### Ok.iterate
-
-A successful `Result` can expose its collection as a lazy pipeline. Only the success path has
-`iterate()`; narrow a possible `Err` with `.isOk` first.
-
-```ts
-import { Ok } from "slang-ts";
-
-const names = Ok(users)
-  .iterate()
-  .filter((user) => user.active)
-  .map((user) => user.name)
-  .take(100)
-  .toArray()
+import { list, struct, println } from "slang-ts";
+
+type User = {
+  id: string;
+  name: string;
+  avatar?: string;
+  email: string;
+};
+
+const users: User[] = await getUsers();
+
+const page = 2;
+const size = 20;
+const total = list(users).count().else(0);
+const start = Math.min(page * size, total);
+const paged = list(users)
+  .range(start, Math.min(start + size, total))
   .else([]);
-```
 
-The chain supports `map`, `filter`, `flatMap`, `take`, `drop`, `chunk`, `reduce`, `count` and
-`toArray`. Transformations are lazy, `take` stops the source early, and a one-shot iterator
-cannot be silently replayed. A non-iterable value fails at the terminal.
-
-### memoized
-
-`memoized` caches a function by its arguments. Primitives compare by value and objects by identity;
-`undefined` is a valid cached result. A rejected Promise is evicted so a later call can retry.
-
-```ts
-import { memoized } from "slang-ts";
-
-const expensive = memoized((a: number, b: number) => compute(a, b));
-expensive(1, 2); // computes
-expensive(1, 2); // cache hit
-expensive.clear();
-```
-
-### taskGroup
-
-A task group shares concurrency and start spacing across tasks and runners. A retry is a new
-admission, and a running task is never cancelled by the throttle.
-
-```ts
-import { superPromise, taskGroup, superRunner } from "slang-ts";
-
-const api = taskGroup("upstream-api", { concurrency: 3, throttle: 200 });
-
-const runner = superRunner({
-  type: "all",
-  runners: {
-    users: superPromise(fetchUsers, { group: api }),
-    posts: superPromise(fetchPosts, { group: api }),
-  },
-});
-```
-
-### createStepper
-
-`createStepper` keeps a bounded, navigable history of keyed steps. `next` runs the caller's function
-and commits a validated step; `prev` moves backward and must be finished with `.else(recover)` or
-`.panic(...)`.
-
-```ts
-import { createStepper } from "slang-ts";
-
-const steps = createStepper<{ screen: string }>({ maxHistory: 50 });
-const first = await steps.next((previous, make) =>
-  make({ key: "welcome", value: { screen: "welcome" } }),
+const cards = paged.map((user) =>
+  struct(user).pick("id", "name", "avatar").else(user),
 );
 
-const earlier = steps.prev().else((previous, make, next) =>
-  make({ key: "restored", value: reconstruct(previous, next) }),
-);
+println(cards);
 ```
 
-`maxHistory` defaults to 50 and `maxSteps` defaults to unlimited. Duplicate retained keys panic,
-while a key may be reused after its step has been evicted. `keyEvalFn` can add an external
-acceptance check. Concurrent `next` calls are serialized.
+`list` does not clamp a range for you, so the example clamps the window and lets the last page be
+short. `struct` then keeps only the fields the card needs.
 
-## Code Samples
-
-See [example.ts](https://github.com/Hussseinkizz/slang/blob/main/example.ts) for usage of currently implemented methods.
+Full detail: [list](docs/list.md) and [struct](docs/struct.md).
 
 ## Development
 
-Install project dependencies with Bun, then export:
+Install dependencies with Bun, then run the release check:
 
 ```bash
 bun install
 bun run export
 ```
 
-`export` runs the tests, checks types with TypeScript 7.0.2, then runs `bun run build`, which uses tsdown 0.23.1 to produce minified ESM at `dist/index.js` and bundled types at `dist/index.d.ts`. `npm publish` runs `export` first through `prepublishOnly`, so a release never ships a stale `dist/`. Package imports keep the same entry points. tsdown currently marks its TypeScript 7 integration as experimental; the project build passes with this setup.
+`export` runs the tests, checks types, and builds minified ESM with bundled declarations into `dist/`.
+`npm publish` runs it through `prepublishOnly`, so a release never ships stale output.
 
-For building, tsdown requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. This is a build-tool requirement, not a new runtime requirement for Slang consumers.
-
-Packaged output passes strict consumer checks with TypeScript 5.9.3 and 7.0.2 under both NodeNext and Bundler resolution, including declaration checking. See [migration context](context.md) for verification details.
+Building requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. This applies to the build tool, not to
+projects using Slang.
 
 ## Contributing
 
-Contributions are welcome. I know there are a lot of cool things out there we can bring in.
+Contributions are welcome. If there is a utility from another language that belongs here, open an
+issue or a pull request.

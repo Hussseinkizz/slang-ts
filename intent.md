@@ -191,3 +191,37 @@ Edge-case and type tests were added, including `tests/types.spec.ts` and cross-r
 coverage. Final `bun run export`: **490 tests across 26 files**, clean typecheck, `dist/index.js` 23.00 kB and `dist/index.d.ts`
 40.57 kB. `package.json` is `0.2.0`, README and the specification baseline say v0.2.0. Not
 published. Pre-change files are in `backup/utilities-finish-2026-10-28/`.
+
+## README and documentation restructure (2026-10-28)
+
+The README becomes the landing page: description, install, the existing plain utility list, one
+brief `0.0.1 – 0.2.0` release summary, categories, real-world examples, and a documentation map.
+The per-utility reference moves to `docs/`, with one page per utility or tightly related family.
+Every page follows the same shape: what it is, when to use it, how to use it, and notes.
+
+Existing README prose is preserved where it is still accurate; examples move into the matching doc
+rather than being rewritten from scratch. The voice stays conversational and practical. Technical
+claims come from the current README, implementation, and verified tests, not new assumptions.
+`docs/superpromises.spec.md` and `docs/internal/` stay untouched. The existing utility list remains
+plain text.
+
+Impact: documentation only. No source, tests, package metadata, or release behavior changes.
+Backup: `backup/readme-docs-2026-10-28/README.md`.
+
+### Tone and spacing pass (2026-10-28)
+
+The README and every `docs/` page were reviewed again for calm, practical prose. The pass fixed the
+`Opiniated` typo, replaced the awkward SafeTry boundary paragraph, folded the standalone Code
+Samples section into the docs links, shortened the Development section, removed repeated
+explanations and notes that restated the examples, and gave subheadings clearer names. Each page
+keeps the same shape: a short definition, then What / When / How / Notes. Links and anchors were
+rechecked. `docs/superpromises.spec.md` and `docs/internal/` were not touched.
+
+Contrast examples were then added to the reference pages where the plain version carries real
+boilerplate: SafeTry, SuperPromise, SuperRunner, taskGroup, createStepper, and memoized. Each
+shows the plain TypeScript version first and the Slang version second. Thin wrappers such as
+Option, Result, Signal, Atom, Channel, and the collection helpers were left alone; a side-by-side
+there would be noise rather than relief.
+
+Backup: `backup/readme-docs-2026-10-28/` (README plus all docs pages) and
+`backup/readme-docs-contrast-2026-10-28/` (the five edited reference pages).
