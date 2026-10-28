@@ -1,22 +1,23 @@
 # Pipe
 
-`pipe` composes functions sequentially. Each function receives a `Result` and returns a `Result`.
+`pipe` runs functions in order. Each function gets a `Result` and returns a `Result`.
 
 ## What it is
 
-Use `pipe` when a workflow has several steps and any step can fail. Each function sees the previous
-result; by default the pipeline stops at the first failure instead of running the remaining work.
+Use `pipe` when a workflow has several steps and any of them can fail. Each function sees the
+previous result, and by default the pipeline stops at the first failure instead of running the
+rest.
 
-The initial value can be a plain value, `Option`, `Result`, or `Atom`.
+You can start with a plain value, `Option`, `Result`, or `Atom`.
 
 ## When to use it
 
-- A request has validation, loading, transformation, and saving steps.
+- A request needs validation, loading, transformation, and saving steps.
 - You want a readable order of operations instead of nested `andThen` calls.
 - You want one place to log each step and handle the final failure.
 
-If a single transformation is enough, `andThen` is lighter. If the steps are independent and should
-run at the same time, use [SuperRunner](super-runner.md) or [taskGroup](task-group.md).
+If one transformation is all you need, `andThen` is lighter. If the steps are independent and
+should run at the same time, use [SuperRunner](super-runner.md) or [taskGroup](task-group.md).
 
 ## How to use it
 
@@ -49,17 +50,17 @@ const result = await pipe(5, add(3), multiply(2)).run({
 
 ## Notes
 
-- Every pipeline function must return a `Result`. Returning anything else becomes
+- Every pipeline function has to return a `Result`. Anything else becomes
   `Err("Pipeline function must return a Result")`.
-- A thrown error is caught and becomes `Err(message)`.
-- `allowErrors` defaults to `false`. With `false`, the pipeline returns on the first `Err`.
-  With `true`, it continues, and your functions are responsible for handling the failed result.
-- `onEach` runs after each function and receives `{ prevResult, currentFn, nextFn }`.
-- `onSuccess` runs for a successful final result. `onError` runs for a failed early exit or a
+- A thrown error gets caught and becomes `Err(message)`.
+- `allowErrors` defaults to `false`. When it's `false`, the pipeline returns on the first `Err`.
+  When it's `true`, it keeps going, and your functions have to handle the failed result.
+- `onEach` runs after each function and gets `{ prevResult, currentFn, nextFn }`.
+- `onSuccess` runs when the final result is successful. `onError` runs on a failed early exit or a
   failed final result.
 - A `Result` whose own value is a `Result` panics.
 - `run()` returns a promise, so await it.
-- The pipeline does not retry, time out, or schedule work. Use [SuperPromise](super-promise.md) for
+- The pipeline doesn't retry, time out, or schedule work. Use [SuperPromise](super-promise.md) for
   that.
 
 ## See also

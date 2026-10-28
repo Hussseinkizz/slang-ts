@@ -1,20 +1,20 @@
 # Panic
 
-`panic(message)` throws immediately. Use it when continuing would be worse than stopping.
+`panic(message)` throws immediately. Use it when carrying on would be worse than stopping.
 
 ## What it is
 
-`panic` is a small guard for unrecoverable states: missing configuration, a broken invariant, a
-case the program cannot safely continue from. It does not return.
+`panic` is a small guard for states you can't recover from: missing configuration, a broken
+invariant, a case the program can't safely continue from. It doesn't return.
 
 ## When to use it
 
 - A required config value is missing at startup.
-- A function's contract was violated and there is no sensible fallback.
+- A function's contract was violated and there's no sensible fallback.
 - You want a guard clause instead of nesting the rest of the function.
 
-Use [Result](result.md) for expected failures the caller can handle. A panic is for the cases where
-there is no useful recovery path.
+Use [Result](result.md) for expected failures the caller can handle. Reach for a panic when there's
+no useful recovery path.
 
 ## How to use it
 
@@ -34,10 +34,10 @@ if (!config.apiKey) panic("API key required");
 
 ## Notes
 
-- `panic` throws an `Error`. It is still a normal JavaScript throw, so an outer `try`/`catch` can
-  catch it. That does not make it a recovery strategy.
-- The message reaches the caller. Make it useful and human-readable.
-- Do not use `panic` for validation or user input. Return an `Err`, a form error, or a proper
+- `panic` throws an `Error`. It's still a normal JavaScript throw, so an outer `try`/`catch` can
+  catch it. That doesn't make it a recovery strategy.
+- The message reaches the caller, so make it useful and human-readable.
+- Don't use `panic` for validation or user input. Return an `Err`, a form error, or a proper
   response instead.
 - Guard early. A panic in the middle of a workflow leaves more state behind than one at the door.
 

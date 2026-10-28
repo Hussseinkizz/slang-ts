@@ -1,21 +1,22 @@
 # Match
 
-`match` handles `Option` and `Result` exhaustively. `matchAll` handles literals and `Atom`s with a
-required `_` fallback.
+`match` covers `Option` and `Result` exhaustively. `matchAll` covers literals and `Atom`s, and it
+requires a `_` fallback.
 
 ## What it is
 
-`match` takes a value and an object of handlers. It returns the value from the handler that runs.
-TypeScript requires every case, so adding a new variant forces the call site to deal with it.
+`match` takes a value and an object of handlers. The matching handler runs, and you get its return
+value back. TypeScript requires every case, so when a new variant shows up, the call site has to
+deal with it.
 
-`matchAll` does the same for strings, numbers, booleans, and `Atom` descriptions. It always
-requires `_`, because there is no finite set of cases to exhaust.
+`matchAll` does the same for strings, numbers, booleans, and `Atom` descriptions. It always needs
+`_`, because there's no finite set of cases to exhaust.
 
 ## When to use it
 
-- You are choosing a value from an `Option` or `Result` and want both branches handled.
-- You want a readable label or action per state, without `if`/`else` chains.
-- You are mapping an `Atom` or literal state to a message, route, or handler.
+- You're picking a value out of an `Option` or `Result` and want both branches handled.
+- You want a readable label or action per state, without an `if`/`else` chain.
+- You're mapping an `Atom` or literal state to a message, route, or handler.
 
 ## How to use it
 
@@ -67,12 +68,12 @@ println(label); // "Active"
 
 ## Options
 
-`Options` normalizes heterogeneous values (raw values, `Option`s, and `Result`s) into a single
-`Result`. It returns the first usable value as `Ok`, or the fallback `Err` if none is usable.
+`Options` takes a mix of raw values, `Option`s, and `Result`s and normalizes them into one
+`Result`. You get the first usable value as `Ok`, or the fallback `Err` when nothing is usable.
 
 A value is usable when its unwrapped inner value is truthy. `None`, `Err`, `null`, `undefined`,
-empty strings, `NaN`, and infinities are skipped. `0` and `false` are usable, matching `option()`
-semantics.
+empty strings, `NaN`, and infinities get skipped. `0` and `false` count as usable, same as
+`option()`.
 
 ```ts
 import { Options, option, Ok, Err } from "slang-ts";
@@ -97,20 +98,20 @@ Options(["", 0, "later"]);           // Ok(0) - zero is usable
 Options([null, undefined, ""]);      // Err("No value!")
 ```
 
-Use it when values come from different functions with inconsistent return types and all you care
-about is whether the end result is usable.
+Reach for it when values come from different functions with inconsistent return types, and all you
+care about is whether the end result is usable.
 
 ## Notes
 
-- `match` requires both cases. Missing one throws
+- `match` requires both cases. Miss one and it throws
   `"Non-exhaustive match — missing handler for '<type>'"`.
-- `matchAll` requires `_`. It is the fallback, not an optional nicety.
+- `matchAll` requires `_`. It's the fallback, not an optional nicety.
 - `matchAll` uses an `Atom`'s description as its key. A plain symbol works too.
 - `matchAll` accepts strings, numbers, booleans, and symbols. Objects, arrays, and functions throw.
-- Boolean and number keys are compared as object property names, so `true` and `1` line up with
+- Boolean and number keys get compared as object property names, so `true` and `1` line up with
   `"true"` and `"1"`.
-- Handlers receive the original wrapper for `match`, so use `value.value` or `error.error`.
-- `Options` takes an optional fallback; the default is `Err("No value!")`.
+- For `match`, handlers receive the original wrapper, so use `value.value` or `error.error`.
+- `Options` takes an optional fallback. The default is `Err("No value!")`.
 
 ## See also
 

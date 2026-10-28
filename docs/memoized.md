@@ -1,15 +1,15 @@
 # memoized
 
-`memoized(fn)` returns a function that remembers the results of earlier calls. Call it with the same
-arguments and you get the cached result instead of running `fn` again.
+`memoized(fn)` gives you a function that remembers the results of earlier calls. Call it with the
+same arguments and you get the cached result instead of running `fn` again.
 
 ## What it is
 
 The cache is a tree keyed by argument position. Each call walks the tree one argument at a time, so
-`fn(1, 2)` and `fn(2, 1)` are different entries. Arguments are not serialized into a string key.
+`fn(1, 2)` and `fn(2, 1)` are different entries. Arguments aren't serialized into a string key.
 
-Primitive values use SameValueZero. Object arguments compare by identity, not by their contents.
-Two objects with the same fields are different keys.
+Primitive values use SameValueZero. Object arguments compare by identity, not by their contents, so
+two objects with the same fields are different keys.
 
 The wrapper works for synchronous and asynchronous functions. For an async function, the returned
 Promise itself is cached, so concurrent callers share one in-flight call.
@@ -20,8 +20,8 @@ Promise itself is cached, so concurrent callers share one in-flight call.
 - Several callers ask for the same async resource and you want one request.
 - A lookup or transform runs often during rendering or processing and its inputs rarely change.
 
-Do not use it for per-request data or functions with side effects. The cache has no size limit and
-no expiry; it holds arguments and results until you call `clear()`.
+Don't use it for per-request data or functions with side effects. The cache has no size limit and no
+expiry; it holds arguments and results until you call `clear()`.
 
 ## How to use it
 
@@ -42,7 +42,7 @@ println(computations);   // 1
 
 ### Async functions
 
-For an async function, the Promise is the cached value. Concurrent calls with the same arguments
+For an async function, the Promise is the cached value, so concurrent calls with the same arguments
 wait on the same call. `memoized` keeps the Promise and the eviction together:
 
 ```ts
@@ -83,8 +83,8 @@ function loadUser(id: number): Promise<User> {
 }
 ```
 
-A rejected Promise is removed from the cache, so a later call runs `fn` again. The call that
-received the rejection still sees it.
+A rejected Promise is removed from the cache, so a later call runs `fn` again. The call that got the
+rejection still sees it.
 
 ### Object arguments
 
@@ -111,13 +111,13 @@ println(read(ada).greeting); // Hello, Ada
 println(cached === read(ada)); // true
 ```
 
-Mutating `ada` does not change its identity, so the old cache entry is still a hit. The cached
-object is also shared: `cached` and every later call with `ada` receive the same object. Mutating a
-cached result is visible to every caller. Return a copy if callers may change it.
+Mutating `ada` doesn't change its identity, so the old cache entry is still a hit. The cached object
+is shared too: `cached` and every later call with `ada` get the same object. Mutating a cached
+result is visible to every caller, so return a copy if callers might change it.
 
 ### Clear the cache
 
-`clear()` removes every entry. There is no per-key delete.
+`clear()` removes every entry. There's no per-key delete.
 
 ```ts
 let runs = 0;
@@ -135,17 +135,17 @@ println(runs); // 2
 
 ## Notes
 
-- `undefined` is a valid cached result. The cache checks for the leaf explicitly, so it is not
+- `undefined` is a valid cached result. The cache checks for the leaf explicitly, so it isn't
   mistaken for a miss.
-- A synchronous throw is not cached. The error reaches the caller and the next call runs `fn` again.
-- A rejected Promise is evicted; a later call can retry. The first caller still receives the
+- A synchronous throw isn't cached. The error reaches the caller, and the next call runs `fn` again.
+- A rejected Promise is evicted, so a later call can retry. The first caller still gets the
   rejection.
 - The cache has no size limit, TTL, or LRU eviction. It strongly holds argument keys and results
   until `clear()`.
-- Mutating an object argument does not create a new entry because its identity is unchanged.
+- Mutating an object argument doesn't create a new entry because its identity is unchanged.
 - Mutating a cached object result affects everyone who receives it.
-- Do not memoize a function with side effects or a function whose result depends on state outside
-  its arguments.
+- Don't memoize a function with side effects, or one whose result depends on state outside its
+  arguments.
 
 ## See also
 

@@ -1,26 +1,26 @@
 # taskGroup
 
-A task group shares concurrency and start spacing across tasks and runners.
+A task group shares a concurrency limit and start spacing across tasks and runners.
 
 ## What it is
 
-A `taskGroup` is a scheduler. It limits how many tasks run at once, optionally spaces out their
-starts, and keeps that budget shared across every task that references the same group.
+A `taskGroup` is a scheduler. It caps how many tasks run at once, can space out their starts, and
+shares that budget with every task that references the same group.
 
-It manages execution, not business idempotency. It does not deduplicate work, retry for you, or
-cancel running tasks to make room.
+It manages execution, not business idempotency. It won't deduplicate work, retry for you, or cancel
+a running task to make room.
 
 ## When to use it
 
-- Several `SuperPromise`s call the same upstream and should not all start at once.
-- You need to spread starts over time to avoid a burst.
+- Several `SuperPromise`s hit the same upstream and shouldn't all start at once.
+- You need to spread starts over time so you don't send a burst.
 - Different runners should share one concurrency budget.
 
-If a single task needs a timeout or retry, configure the task. Use the group for the shared limit.
+If one task needs a timeout or retry, configure that task. Use the group for the shared limit.
 
 ## How to use it
 
-A group carries the concurrency and spacing policies and shares them across tasks:
+A group holds the concurrency and spacing policy for every task that references it:
 
 ```ts
 import { superPromise, taskGroup, superRunner } from "slang-ts";
@@ -38,7 +38,7 @@ const runner = superRunner({
 await runner.start();
 ```
 
-Without it, a concurrency limit is a queue with a counter, and spacing starts adds a timer on top:
+Without it, you'd write a queue with a counter, then add a timer on top for spacing:
 
 ```ts
 function createLimiter(limit: number) {
@@ -63,7 +63,7 @@ const limit = createLimiter(3);
 await Promise.all(urls.map((url) => limit(() => fetch(url))));
 ```
 
-The same group can be shared across runners:
+You can share the same group across runners:
 
 ```ts
 const first = superRunner({
@@ -87,7 +87,7 @@ await Promise.all([first.start(), second.start()]);
 
 ### Manual admission
 
-You can use a group without `SuperPromise`:
+You can also use a group without `SuperPromise`:
 
 ```ts
 const release = await api.acquire();
@@ -102,21 +102,21 @@ try {
 
 | Option | Default | What it does |
 |---|---|---|
-| `concurrency` | unlimited | Maximum tasks active at once. Must be a positive integer. |
+| `concurrency` | unlimited | How many tasks can be active at once. Must be a positive integer. |
 | `throttle` | `0` | Minimum milliseconds between admitted starts. Must be a nonnegative integer. |
 
-The group's `name` is a label for debugging. Identity is the object itself, not the name.
+The group's `name` is just a label for debugging. Identity is the object itself, not the name.
 
 ## Notes
 
-- `throttle` spaces starts; it never cancels a running task.
-- A retry is a new admission. A retried `SuperPromise` goes back through the group's queue.
-- A task waiting for admission has not started, so its timeout has not started either. The timeout
+- `throttle` only spaces starts. It never cancels a running task.
+- A retry is a new admission, so a retried `SuperPromise` goes back through the group's queue.
+- A task waiting for admission hasn't started, so its timeout hasn't started either. The timeout
   applies once the attempt is admitted.
-- `acquire()` resolves with a release callback. Call it when the work finishes. Releasing twice is
+- `acquire()` resolves with a release callback. Call it when the work is done. Releasing twice is
   safe, but the first release is the one that frees the slot.
-- Concurrency is shared by object identity. Two groups with the same name are separate budgets.
-- There is no debounce. Pending tasks are not merged or superseded.
+- Concurrency is shared by object identity, so two groups with the same name are separate budgets.
+- There's no debounce. Pending tasks aren't merged or superseded.
 - Queued work has no cancellation API of its own. Awaiting admission still resolves when a slot
   frees.
 

@@ -1,29 +1,29 @@
 # SafeTry
 
-`safeTry` runs a sync or async function and captures failures as `Err<string>`. It also unwraps
-Slang wrappers into one `Result`.
+`safeTry` runs a sync or async function and turns failures into `Err<string>`. It unwraps Slang
+wrappers into one `Result` too.
 
 ## What it is
 
 Use `safeTry` at a boundary where several things can fail: a fetch, a parser, a database call, an
-optional lookup. Instead of scattering `try`/`catch` and null checks, the function returns one
-`Result` the caller can inspect.
+optional lookup. Instead of scattering `try`/`catch` and null checks, you get one `Result` back to
+inspect.
 
-It is most useful when the failures arrive in different shapes: a thrown error, a `Result`, an
-`Option`, or an `Atom`.
+It's most useful when failures arrive in different shapes: a thrown error, a `Result`, an `Option`,
+or an `Atom`.
 
 ## When to use it
 
 - A function mixes throws, `Result`s, `Option`s, or `Atom`s.
 - You want one failure shape at the edge of a feature.
-- You are calling async code and do not want its errors to escape as rejections.
+- You're calling async code and don't want its errors to escape as rejections.
 
-For a single `Result`-returning function, plain `Result` is enough. `safeTry` earns its place at
-the boundary where several shapes meet.
+If you just have one `Result`-returning function, plain `Result` is enough. `safeTry` earns its
+place at the boundary where several shapes meet.
 
 ## How to use it
 
-The boundary is easiest to see next to the code it replaces. A lookup can throw; a parser can
+It's easiest to see the boundary next to the code it replaces. A lookup can throw; a parser can
 reject a value. `safeTry` brings both into one `Result`:
 
 ```ts
@@ -50,7 +50,7 @@ if (role.isOk) {
 }
 ```
 
-Without it, the caller handles the throw and the rejected value separately:
+Without it, the caller has to handle the throw and the rejected value separately:
 
 ```ts
 type Role = "admin" | "member";
@@ -73,11 +73,12 @@ try {
 }
 ```
 
-These examples use `localStorage` for the lookup; in Node, swap it for your platform's storage.
+These examples use `localStorage` for the lookup. In Node, swap it for whatever storage your
+platform gives you.
 
 ### Unwrapping wrappers
 
-`safeTry` also unwraps Slang wrappers, so a returned `Option` or `Atom` does not need its own
+`safeTry` also unwraps Slang wrappers, so a returned `Option` or `Atom` doesn't need its own
 branch.
 
 ```ts
@@ -100,12 +101,13 @@ const caught = await safeTry(async () => {
 if (caught.isErr) println(caught.error);
 ```
 
-Always await it. It returns a promise even when the callback is synchronous.
+Always await it. You get a promise even when the callback is synchronous.
 
 ### What unwraps and what stays
 
-Only the returned wrapper chain unwraps. Plain object properties and array elements stay as
-supplied. Only the callback's return is awaited; a Promise inside `Ok` or `Some` stays a Promise.
+Only the returned wrapper chain unwraps. Plain object properties and array elements stay as you
+supplied them. Only the callback's return is awaited; a Promise inside `Ok` or `Some` stays a
+Promise.
 
 ```ts
 import { safeTry, Ok, println } from "slang-ts";
@@ -122,9 +124,9 @@ if (wrapped.isOk) println(wrapped.value === innerPromise); // true
 
 ### Throwing instead of returning
 
-`{ throw: true }` rethrows errors caught while running the callback or reading its returned
-wrappers. Returned `Err` values still return normally. A circular wrapper chain returns
-`Err("Cannot resolve a circular value")`, including with `{ throw: true }`.
+`{ throw: true }` rethrows errors caught while running the callback or reading the wrappers it
+returns. A returned `Err` still comes back normally. A circular wrapper chain returns
+`Err("Cannot resolve a circular value")`, even with `{ throw: true }`.
 
 ```ts
 import { safeTry, Ok, Err, println } from "slang-ts";
@@ -141,16 +143,16 @@ await safeTry(() => {
 ### Collected layers
 
 `{ collectValues: true }` records the layers it walks and any failure on the returned `Result`'s
-non-enumerable `.raw`, shaped `{ errors, values }`. It is diagnostic data for logs, not a formatted
-message for users.
+non-enumerable `.raw`, shaped `{ errors, values }`. That's diagnostic data for logs, not a
+formatted message for users.
 
 ## Notes
 
-- The returned `Result` is always a promise. Missing an `await` gives you a promise, not an
-  inspectable result.
+- You always get a promise back. Forget the `await` and you have a promise, not an inspectable
+  result.
 - `None` becomes `Err("Option was None")`. An `Atom` becomes its description.
-- A caught throw keeps the thrown value on `.raw` unless `{ collectValues: true }` replaces it.
-- Nested `Result` values are rejected at the type level and panic at runtime if they slip in
+- A caught throw keeps the thrown value on `.raw`, unless `{ collectValues: true }` replaces it.
+- Nested `Result` values are rejected at the type level, and they panic at runtime if they slip in
   through untyped data.
 
 ## See also

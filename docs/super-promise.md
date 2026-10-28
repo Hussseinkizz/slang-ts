@@ -1,18 +1,18 @@
 # SuperPromise
 
-Native promises with execution controls: wait before starting, retry a failure, time out a hang,
-cancel from outside, and a `done` signal to wire into other work.
+`superPromise` gives you native promises with execution controls: wait before starting, retry a
+failure, time out a hang, cancel from outside, and a `done` signal to wire into other work.
 
 Tasks settle into `Ok` or `Err`, so you check an outcome instead of wrapping every await in
 `try`/`catch`.
 
 ## What it is
 
-`superPromise(executor, options?)` wraps an async operation. The executor receives an `AbortSignal`
+`superPromise(executor, options?)` wraps an async operation. Your executor receives an `AbortSignal`
 and returns a value, a `Result`, or a promise of either.
 
-The returned task is promise-compatible. Awaiting it gives `Result<T, string>`; it does not reject
-just because the executor threw.
+You can await the task like a normal promise. You get a `Result<T, string>` back, and it doesn't
+reject just because the executor threw.
 
 ## When to use it
 
@@ -28,7 +28,7 @@ For simple work that needs none of that, a plain promise is enough.
 
 ### A timeout and retries
 
-`superPromise` takes the policy as options and settles into a `Result`:
+You pass the policy as options, and the task settles into a `Result`:
 
 ```ts
 import { superPromise, println } from "slang-ts";
@@ -51,7 +51,7 @@ if (result.isOk) {
 }
 ```
 
-Without it, the same policy lives in the call site: a controller and timer per attempt, plus a loop
+Without it, the same policy lives at the call site: a controller and timer per attempt, plus a loop
 that decides what may be retried.
 
 ```ts
@@ -76,11 +76,11 @@ async function loadUserWithRetry(url: string, attempts = 3): Promise<User> {
 }
 ```
 
-The task also supports `.then`; the callback receives the same `Result`.
+The task also supports `.then`, and the callback receives the same `Result`.
 
 ### Wait for something else first
 
-`defer` holds execution until a signal fires. Chain operations so the next starts only when the
+`defer` holds execution until a signal fires. Chain operations so the next one starts only when the
 previous is done:
 
 ```ts
@@ -123,25 +123,25 @@ await superPromise(loadUser).tap((user) => println(user.name)); // observe, do n
 |---|---|
 | `defer` | Wait for an `AbortSignal` to fire before starting. |
 | `delay` | Wait this many milliseconds before the first attempt; normal retries wait too. |
-| `timeout` | Abort the attempt after this many milliseconds. `retry` does not retry a timeout. |
+| `timeout` | Abort the attempt after this many milliseconds. `retry` doesn't retry a timeout. |
 | `retry` | Retry this many times after the first attempt, for `n + 1` total attempts. Aborts and timeouts are never retried. |
 | `retryUntil` | Keep retrying until the stop signal fires. Overrides `retry` and the top-level `delay`. |
 | `group` | Shared [taskGroup](task-group.md) admission. A retry reacquires admission. |
 
 ## Notes
 
-- A task does not start until you consume it (`await`, `.then()`, or a runner's `start()`). This
+- A task doesn't start until you consume it (`await`, `.then()`, or a runner's `start()`). That
   lets you wire dependencies before anything runs.
-- The executor's thrown errors become `Err`, not rejections. `.then` receives the settled `Result`;
-  `.catch` does not see executor failures.
-- `timeout` aborts the operation. `retry` does not retry a timeout; `retryUntil` keeps trying after
-  one until its stop signal fires.
+- The executor's thrown errors become `Err`, not rejections. `.then` receives the settled `Result`,
+  and `.catch` doesn't see executor failures.
+- `timeout` aborts the operation. `retry` doesn't retry a timeout, but `retryUntil` keeps trying
+  after one until its stop signal fires.
 - `retryUntil`'s `delay` applies between attempts, not before the first.
-- `abort()` settles the task with `Err("Aborted")` if it has not settled already.
+- `abort()` settles the task with `Err("Aborted")` if it hasn't settled already.
 - A manual task settles once. The first `resolve` or `reject` wins; later calls do nothing.
 - `tap` observes a successful value without changing it. If the callback throws, the task settles
   as `Err`.
-- While a task waits for group admission, its timeout has not started. The timeout applies to the
+- While a task waits for group admission, its timeout hasn't started. The timeout applies to the
   attempt once it starts.
 
 ## See also

@@ -1,16 +1,14 @@
 # slang-ts documentation
 
-The [README](../README.md) is the tour. These pages are the reference.
+The [README](../README.md) is the quick tour. These pages are the reference you come back to.
 
-These pages describe the current source (`0.2.0`). npm may lag until the next release.
-
-Each page covers a utility or a closely related family: what it is, when to reach for it, how to use
-it, and the details worth knowing before you rely on it.
+Each page covers one utility or a close family of them: what it is, when you'd reach for it, how to
+use it, and the details worth knowing before you rely on it.
 
 ## Start here
 
-- [Result](result.md) and [SafeTry](safe-try.md): turn failures into values instead of scattered
-  `try`/`catch`.
+- [Result](result.md) and [SafeTry](safe-try.md): turn failures into values instead of scattering
+  `try`/`catch` around.
 - [SuperPromise](super-promise.md): async work with timeouts, retries, cancellation, and `Result`
   outcomes.
 - [list](list.md), [struct](struct.md), and [Ok.iterate](iterate.md): strict collections and lazy
@@ -20,10 +18,10 @@ it, and the details worth knowing before you rely on it.
 
 - [Option](option.md): optional values where `0` and `false` still count.
 - [Result](result.md): `Ok`/`Err` outcomes, messages, unwrapping, and `andThen`.
-- [SafeTry](safe-try.md): one boundary that captures throws and unwraps Slang wrappers.
+- [SafeTry](safe-try.md): one boundary that catches throws and unwraps Slang wrappers.
 - [Match](match.md): exhaustive `Option`/`Result` matching and literal matching with `matchAll`.
 - [Options](match.md#options): normalize mixed raw values, `Option`s, and `Result`s.
-- [Pipe](pipe.md): sequential steps over a `Result`, stopping at the first failure.
+- [Pipe](pipe.md): run steps over a `Result` in order and stop at the first failure.
 
 ## Composition and conversion
 
@@ -46,7 +44,7 @@ it, and the details worth knowing before you rely on it.
 - [SuperRunner](super-runner.md): sequence, parallel, and race orchestration for `SuperPromise`s.
 - [taskGroup](task-group.md): shared concurrency and start spacing across tasks.
 - [Signal](signal.md): a trigger that fires once and stays fired.
-- [Channel](channel.md): publish/subscribe between parts of an app that do not know each other.
+- [Channel](channel.md): publish/subscribe between parts of an app that don't know each other.
 
 ## Small utilities
 
@@ -56,9 +54,10 @@ it, and the details worth knowing before you rely on it.
 
 ## A note on examples
 
-Examples use `println` for output. It is optional; `console.log` works. The SafeTry example uses
-`localStorage`, which is browser-only; use your platform's storage in Node. Examples that call
-`fetch` assume a runtime that provides it (modern browsers and Node.js 20+).
+The examples print with `println`. It's optional, so use `console.log` if you prefer. The SafeTry
+example uses `localStorage`, which only exists in the browser; in Node, use whatever storage your
+platform gives you. Examples that call `fetch` expect a runtime that has it (modern browsers and
+Node.js 20+).
 
 ## For contributors
 

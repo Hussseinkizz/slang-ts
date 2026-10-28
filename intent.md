@@ -251,3 +251,19 @@ this size; revisit after 1.0 or when the docs outgrow the index.
 
 Impact: README, docs, package metadata, and the example header only. No library source, tests,
 version bump, or publish. Backup: `backup/readme-onboarding-2026-10-28/`.
+
+## Tone pass and release-note cleanup (2026-10-28)
+
+The version note is gone from the README and the docs index. `package.json` is the single source of
+the version, so the docs no longer repeat it or warn about npm lag. Requirements moved to the bottom
+of the README, just before the license.
+
+`CHANGELOG.md` is now a feature and change list grouped by area. Version headings, dates, and the
+"unreleased" label are gone, so the file never needs editing just because a release happened.
+
+The "Why I Made This?" heading and paragraph are untouched. The rest of the README and every docs
+reference page speak to the reader as "you", use contractions, and keep the author's practical,
+informal tone. Code blocks, headings, links, type signatures, and technical claims are unchanged.
+
+Impact: README, `CHANGELOG.md`, and docs prose only. No library source, tests, package metadata, or
+publish. Backup: `backup/readme-tone-2026-10-28/`.

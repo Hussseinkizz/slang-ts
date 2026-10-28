@@ -5,8 +5,9 @@
 
 An opinionated functional programming library for TypeScript.
 
-A collection of utilities and mechanisms brought over from languages like Rust and Erlang. Each
-utility is deliberately chosen and built from scratch with zero runtime dependencies.
+I took the utilities I kept reaching for in Rust and Erlang and built them from scratch, with zero
+dependencies. No giant abstraction layer to learn. Just small tools that make your everyday code
+read a little nicer.
 
 ## Install
 
@@ -14,20 +15,14 @@ utility is deliberately chosen and built from scratch with zero runtime dependen
 npm i slang-ts
 ```
 
-<!-- Remove this note once 0.2.0 is published to npm. -->
-> **Version note:** These docs describe `0.2.0`. npm currently serves `0.1.1`; the 0.2.0 utilities
-> ship with the next release.
+## Why I Made This?
 
-## Requirements
-
-- ESM-only. Use `import`, not `require`.
-- Node.js 20+ or a modern browser.
-- TypeScript 5.9.x or 7.0.x for the bundled types. JavaScript works without TypeScript.
-- Zero runtime dependencies.
-
-Examples use `fetch`; the SafeTry example uses `localStorage`. Swap those for your platform.
+Well I love functional programming so much and hate classes and inheritance with all my heart, sorry no offense intended, I prefer composition and functions over those but well that's not exactly why I made this despite part of the reasons, main reason was all functional programming (FP) libraries in typescript and javascript were really complicated, think effect ts and rameda, all seemed like needed one to be so nerdy, so was like I need something simple I can work with comfortably and can onboard a team to over an evenning, one by one, got each utility crafted out, to what you see today, here I aimed more for practicality than correctness, so yes some functions are not pure, a few rules broken, a few opinions, and all that makes this fun to use, try it!
 
 ## Quick start
+
+So let's say you have a function that can fail. Instead of throwing and hoping someone up the chain
+catches it, you return a `Result`:
 
 ```ts
 import { Ok, Err, type Result, println } from "slang-ts";
@@ -45,7 +40,7 @@ if (result.isOk) {
 }
 ```
 
-`println` is optional. It is a small development logger; `console.log` works too.
+`println` is optional. It's a small development logger, and `console.log` works just fine.
 
 ## Imports
 
@@ -58,6 +53,8 @@ import { option, Ok, Err, atom, match } from "slang-ts";
 A namespace import (`import * as slang from "slang-ts"`) also works.
 
 ## Choose by problem
+
+Not sure where to start? Find your problem in the table and follow the link:
 
 | If you need… | Use |
 |---|---|
@@ -102,14 +99,14 @@ A namespace import (`import * as slang from "slang-ts"`) also works.
 
 [Panic][panic] · [println][logging] (with `setEnvironment`) · [createStepper][stepper]
 
-Full reference: [docs index][docs-index]. Release notes: [CHANGELOG.md][changelog].
+Full reference: [docs index][docs-index]. Feature list: [CHANGELOG.md][changelog].
 
 ## Real-world examples
 
 ### Load a value that can fail: SafeTry + Result
 
-A boundary often mixes failures: a lookup that throws, a parser that rejects a value, an optional
-result. `safeTry` brings them into one `Result`:
+Your boundary probably mixes failures: a lookup that throws, a parser that rejects a value, an
+optional result. `safeTry` brings all of that into one `Result`:
 
 ```ts
 import { Err, Ok, safeTry, type Result, println } from "slang-ts";
@@ -135,7 +132,7 @@ if (role.isOk) {
 }
 ```
 
-Without it, the caller has to catch the throw and still branch on the value:
+Without it, you'd have to catch the throw and still branch on the value:
 
 ```ts
 type Role = "admin" | "member";
@@ -158,14 +155,16 @@ try {
 }
 ```
 
-`localStorage` is browser-only; in Node, use your platform's storage and keep the same shape.
+`localStorage` is browser-only. In Node, use whatever storage your platform gives you and keep the
+same shape.
 
 Full detail: [SafeTry][safe-try] and [Result][result].
 
 ### Call an API with a timeout and retries: SuperPromise
 
-The executor receives an `AbortSignal`. `timeout` aborts an attempt, `retry` repeats an ordinary
-failure, and the task settles into `Ok` or `Err`, so there is no `try`/`catch` around the await.
+Your executor gets an `AbortSignal`. `timeout` aborts an attempt, `retry` runs it again after an
+ordinary failure, and the whole thing settles into `Ok` or `Err` — so no `try`/`catch` around the
+await.
 
 ```ts
 import { superPromise, println } from "slang-ts";
@@ -192,8 +191,8 @@ Full detail: [SuperPromise][super-promise].
 
 ### Page a list and shape records: list + struct
 
-`list` keeps bounds strict: a bad range fails instead of quietly returning less data. `struct`
-reads and shapes records without spreading fields you did not choose.
+`list` keeps bounds strict: a bad range fails instead of quietly giving you less data. `struct`
+reads and shapes records without spreading fields you didn't choose.
 
 ```ts
 import { list, struct, println } from "slang-ts";
@@ -222,35 +221,45 @@ const cards = paged.map((user) =>
 println(cards);
 ```
 
-`list` does not clamp a range for you, so the example clamps the window and lets the last page be
+`list` won't clamp a range for you, so the example clamps the window and lets the last page be
 short. `struct` then keeps only the fields the card needs.
 
 Full detail: [list][list] and [struct][struct].
 
 ## Development
 
-Install dependencies with Bun, then run the release check:
+Install with Bun, then run the release check:
 
 ```bash
 bun install
 bun run export
 ```
 
-`export` runs the tests, checks types, and builds minified ESM with bundled declarations into `dist/`.
-`npm publish` runs it through `prepublishOnly`, so a release never ships stale output. Tests live in
-[tests](https://github.com/Hussseinkizz/slang/tree/main/tests).
+`export` runs the tests, checks types, and builds minified ESM with bundled declarations into
+`dist/`. `npm publish` runs it through `prepublishOnly`, so you never ship stale output. Tests live
+in [tests](https://github.com/Hussseinkizz/slang/tree/main/tests).
 
-Building requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. This applies to the build tool, not to
+Building needs Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`. That's for the build tool, not for
 projects using Slang.
 
 ## Contributing
 
-Contributions are welcome. If there is a utility from another language that belongs here, open an
-issue or a pull request.
+Got a utility from another language that belongs here? Open an issue or a pull request.
+Contributions are welcome.
+
+## Requirements
+
+- ESM only. You'll use `import`; `require` isn't supported.
+- Node.js 20+ or a modern browser.
+- TypeScript 5.9.x or 7.0.x if you want the bundled types. Plain JavaScript works too.
+- Zero runtime dependencies.
+
+The SuperPromise example uses `fetch`, and the SafeTry one uses `localStorage`. Swap those for
+whatever your platform provides.
 
 ## License
 
-MIT. See [LICENSE][license].
+MIT License. See [LICENSE][license] for the full text.
 
 [option]: https://github.com/Hussseinkizz/slang/blob/main/docs/option.md
 [result]: https://github.com/Hussseinkizz/slang/blob/main/docs/result.md

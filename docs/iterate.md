@@ -1,32 +1,32 @@
 # Ok.iterate
 
-`Ok(value).iterate()` turns the value's collection into a lazy pipeline. Describe the work with
+`Ok(value).iterate()` turns the value's collection into a lazy pipeline. You describe the work with
 `map`, `filter`, `flatMap`, `take`, `drop`, and `chunk`, then finish with `reduce`, `count`, or
 `toArray`.
 
 ## What it is
 
-`iterate()` is a success-path capability. Only an `Ok` has it; an `Err` has no chain. If you hold a
-`Result` that may have failed, check `.isOk` first and call `iterate()` inside that branch.
+`iterate()` is a success-path capability. Only an `Ok` has it, and an `Err` has no chain. If you
+hold a `Result` that may have failed, check `.isOk` first and call `iterate()` inside that branch.
 
-The chain is lazy. Each transformation wraps the source in a new generator, and no values are read
-until a terminal runs. That means an array is not copied at every step, and `take` can stop an
-infinite source after the count you asked for.
+The chain is lazy. Each transformation wraps the source in a new generator, and nothing is read
+until a terminal runs. So an array isn't copied at every step, and `take` can stop an infinite
+source after the count you asked for.
 
 The type parameter describes the collection, not the element. `Ok(users)` gives
-`IterateChain<User[]>`, and the callbacks in `map`, `filter`, and `flatMap` receive a `User`.
-`map` and `flatMap` produce new element types; `filter`, `take`, and `drop` keep the current one.
+`IterateChain<User[]>`, and the callbacks in `map`, `filter`, and `flatMap` receive a `User`. `map`
+and `flatMap` produce new element types, while `filter`, `take`, and `drop` keep the current one.
 
 ## When to use it
 
 - You have a collection inside an `Ok` and want to filter, transform, or batch it.
 - You want to stop reading a large or infinite source after a fixed number of values.
 - You want a failure from a transform callback to come back as a value instead of a throw.
-- You are processing a stream and do not want an intermediate array at every stage.
+- You're processing a stream and don't want an intermediate array at every stage.
 
-For strict indexed access with explicit bounds, use [list](list.md). For plain arrays that cannot
+For strict indexed access with explicit bounds, use [list](list.md). For plain arrays that can't
 fail, native array methods are enough. `iterate` earns its place when the collection comes from a
-`Result` or the work can fail.
+`Result`, or when the work can fail.
 
 ## How to use it
 
@@ -86,8 +86,8 @@ println(JSON.stringify(afterFirstTwo)); // [3,4]
 
 ### Reduce and count
 
-`reduce` takes the accumulator callback and a seed. The callback also receives the index.
-`count` is a terminal that returns the number of values.
+`reduce` takes an accumulator callback and a seed. The callback also receives the index. `count` is
+a terminal that returns the number of values.
 
 ```ts
 const orders = [{ total: 12 }, { total: 8 }, { total: 5 }];
@@ -106,7 +106,7 @@ println(Ok(orders).iterate().count().else(0)); // 3
 ### Stop early with take
 
 `take(n)` reads at most `n` values. Once it has read `n`, it stops the source early and calls the
-source iterator's `return`, so an infinite generator is safe as long as a terminal only needs a
+source iterator's `return`, so an infinite generator is safe as long as your terminal only needs a
 prefix.
 
 ```ts
@@ -119,7 +119,7 @@ const firstThree = Ok(ids()).iterate().take(3).toArray().else([]);
 println(JSON.stringify(firstThree)); // [1,2,3]
 ```
 
-`take` does not read one extra value to discover the end. `take(5)` on a two-value source returns
+`take` doesn't read one extra value to discover the end. `take(5)` on a two-value source returns
 both values, and `take(0)` reads nothing.
 
 ### Failures and one-shot sources
@@ -157,21 +157,21 @@ An array or another re-iterable source can run a terminal more than once.
 ## Notes
 
 - `map`, `filter`, and `flatMap` pass `(value, index)`. Indexes start at 0 and count the values
-  arriving at that step. `reduce` passes `(accumulator, value, index)`.
-- Transformations are lazy; the source is not read until a terminal. Invalid `take`, `drop`, and
-  `chunk` arguments are checked when you call them, and the chain carries the failure.
+  arriving at that step, and `reduce` passes `(accumulator, value, index)`.
+- Transformations are lazy; the source isn't read until a terminal runs. Invalid `take`, `drop`,
+  and `chunk` arguments are checked when you call them, and the chain carries the failure.
 - `take` and `drop` need a nonnegative safe integer. A negative, fractional, or unsafe count gives
-  `INVALID_INDEX`. `chunk` needs a positive safe integer; anything else gives
+  `INVALID_INDEX`. `chunk` needs a positive safe integer, and anything else gives
   `INVALID_CHUNK_SIZE`. These fail the chain instead of throwing.
 - A callback throw becomes an `INVALID_INPUT` failure. A thrown `Error` keeps its message.
 - A non-iterable `Ok` value fails at the terminal with `INVALID_INPUT` and
   `"Cannot iterate a non-iterable value"`.
 - A chain over a one-shot iterator shares its consumed flag with every derived chain. A second
   terminal returns `INVALID_INPUT` with `"This iterator has already been consumed"`.
-- Strings are iterable, so `Ok("abc")` gives characters. `Ok(new Set(...))`, maps, and typed arrays
-  are iterable too; they iterate in their native order.
+- Strings are iterable, so `Ok("abc")` gives you characters. `Ok(new Set(...))`, maps, and typed
+  arrays are iterable too, and they iterate in their native order.
 - Terminals return `Fallible`. Resolve with `.else(fallback)`, `.else((error) => fallback)`, or
-  `.panic(message?)`. `.panic()` throws the chain's error when you do not pass a message.
+  `.panic(message?)`. `.panic()` throws the chain's error when you don't pass a message.
 
 ## See also
 

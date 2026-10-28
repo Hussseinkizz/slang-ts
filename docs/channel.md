@@ -1,12 +1,12 @@
 # Channel
 
-A channel lets parts of an app that do not know each other talk: one side publishes, another
+A channel lets parts of an app that don't know each other talk: one side publishes, the other
 listens.
 
 ## What it is
 
-A channel is a small in-process event bus. Subscribers listen to a topic; publishers send events to
-that topic.
+It's a small event bus inside one process. Subscribers listen to a topic, and publishers send
+events to it.
 
 ## When to use it
 
@@ -14,8 +14,8 @@ that topic.
 - Several parts of the UI or service care about the same event.
 - You want to publish when a task or workflow finishes.
 
-For request/response, call the function directly. For cross-process messaging, use a real message
-broker. A channel is for one process.
+For request/response, just call the function directly. For cross-process messaging, use a real
+message broker. A channel is for one process.
 
 ## How to use it
 
@@ -32,7 +32,7 @@ channel.send({ topic: "user.created", data: { id: "123" } });
 unsubscribe(); // stop listening
 ```
 
-Publish when a trigger goes off or a task finishes:
+Publish when a trigger fires or a task finishes:
 
 ```ts
 channel.when({
@@ -45,14 +45,14 @@ channel.when({
 ## Notes
 
 - `send` is synchronous. Subscribers run before `send` returns.
-- Topics are exact strings. There is no wildcard or hierarchy.
-- `subscribe` returns an unsubscribe function. Call it when the listener is no longer needed.
-- Sending to a topic with no subscribers is a no-op.
-- A throwing subscriber does not stop the others. The error is reported through
-  [println](logging.md), so it is silent in production unless a logger is wired.
+- Topics are exact strings. There's no wildcard or hierarchy.
+- `subscribe` returns an unsubscribe function. Call it when you no longer need the listener.
+- Sending to a topic with no subscribers does nothing.
+- A throwing subscriber doesn't stop the others. The error goes through
+  [println](logging.md), so it's silent in production unless a logger is wired.
 - `when` sends immediately if the signal has already fired.
-- Events are not replayed. A subscriber added after an event misses it.
-- `data` is `unknown`; the publisher and subscriber share the shape by convention.
+- Events aren't replayed. A subscriber added after an event misses it.
+- `data` is `unknown`, so the publisher and subscriber share the shape by convention.
 
 ## See also
 

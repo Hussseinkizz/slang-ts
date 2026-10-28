@@ -1,18 +1,18 @@
 # Result
 
-`Result` represents an operation that can succeed or fail. `Ok(value)` is success; `Err(error)` is
-failure.
+`Result` represents an operation that can succeed or fail. `Ok(value)` means success; `Err(error)`
+means failure.
 
 ## What it is
 
-A `Result` carries either a value or a human-readable error. It lets failures travel through normal
-code instead of being thrown past the function that understands them.
+A `Result` carries either a value or a human-readable error. That way a failure can travel through
+normal code instead of getting thrown past the function that actually understands it.
 
 ```ts
 type Result<T, E> = Ok<T> | Err<E>;
 ```
 
-`Ok` can also carry a message:
+`Ok` can carry a message too:
 
 ```ts
 const saved = Ok({ id: "123" }, "Profile saved");
@@ -21,13 +21,13 @@ if (saved.isOk) println(saved.message); // "Profile saved"
 
 ## When to use it
 
-- A function has expected failure paths: validation, a missing record, a rejected request.
-- You want the caller to handle failure explicitly.
-- You are composing steps and want to stop at the first failure.
-- You want a failure to keep a diagnostic cause without putting it in the user-facing message.
+- A function has failure paths you expect: validation, a missing record, a rejected request.
+- You want the caller to deal with the failure explicitly.
+- You're composing steps and want to stop at the first failure.
+- You want to keep a diagnostic cause around without putting it in the message the user sees.
 
-Use `Result` for recoverable, expected failures. Use [panic](panic.md) or `expect()` when the
-failure is a programming error you do not intend to recover from.
+Use `Result` for failures you expect and can recover from. When the failure is a programming error
+you never intend to recover from, use [panic](panic.md) or `expect()`.
 
 ## How to use it
 
@@ -73,18 +73,18 @@ if (user.isOk) {
 }
 ```
 
-At a larger boundary, [SafeTry](safe-try.md) can replace that `try`/`catch` and also unwrap
-`Option` and `Atom` values.
+At a bigger boundary, [SafeTry](safe-try.md) can replace that `try`/`catch` and unwrap `Option` and
+`Atom` values too.
 
 ### Expect and unwrap
 
-`expect()` returns the `Ok` value or throws for `Err`.
+`expect()` gives you the `Ok` value, or throws on `Err`.
 
 ```ts
 const value = Ok(42).expect("must succeed");
 ```
 
-`unwrap()` must be finished with `.else(...)`. For `Err`, the fallback is returned; if it is a
+You have to finish `unwrap()` with `.else(...)`. For `Err`, you get the fallback; if it's a
 function, it receives the error.
 
 ```ts
@@ -94,8 +94,8 @@ const message = Err("missing").unwrap().else((error) => `Using default: ${error}
 
 ### andThen
 
-`andThen` transforms `Ok` and skips `Err`. If the callback returns a `Result`, it is passed through
-as is, never wrapped again.
+`andThen` transforms `Ok` and skips `Err`. If the callback returns a `Result`, it passes through as
+is, never wrapped again.
 
 ```ts
 Ok(10).andThen((x) => x + 5);            // Ok(15)
@@ -104,7 +104,7 @@ Ok(5).andThen((x) => Ok(x * 2));         // Ok(10) - flattened
 Ok(5).andThen(() => undefined);          // Ok(5) - original
 ```
 
-It supports async callbacks:
+Async callbacks work here too:
 
 ```ts
 const result = await Ok(5).andThen(async (x) => await loadValue(x));
@@ -112,8 +112,8 @@ const result = await Ok(5).andThen(async (x) => await loadValue(x));
 
 ### Raw cause
 
-`Err(error, raw?)` keeps the original cause on a non-enumerable `.raw`. The message stays clean for
-users; the cause stays available for logs.
+`Err(error, raw?)` keeps the original cause on a non-enumerable `.raw`. Users see the clean message;
+your logs can still get at the cause.
 
 ```ts
 const driverError = new Error("connection reset");
@@ -123,19 +123,20 @@ println(failed.error); // "Could not load profile"
 println(failed.raw);   // the original driver error
 ```
 
-`raw` is not included in `JSON.stringify`, spread, or `Object.keys`.
+`raw` doesn't show up in `JSON.stringify`, spread, or `Object.keys`.
 
 ## Notes
 
-- `Err` takes a string message. Keep it human-readable; put the technical cause in `.raw`.
-- A `Result` never nests inside another `Result`. `Ok(Ok(x))` and `Ok(Err(x))` do not compile.
-- `andThen` is the exception: a returned `Result` is flattened. A returned `Result` whose own value
-  is a `Result` panics.
-- `andThen` catches a thrown error and returns `Err(message)`. Returning `undefined` keeps the
+- `Err` takes a string message. Keep it readable; put the technical cause in `.raw`.
+- A `Result` never nests inside another `Result`. `Ok(Ok(x))` and `Ok(Err(x))` won't compile.
+- `andThen` is the exception: a returned `Result` gets flattened. A returned `Result` whose own
+  value is a `Result` panics.
+- `andThen` catches a thrown error and gives you `Err(message)`. Return `undefined` and you keep the
   original `Ok`.
-- `andThen` does not copy the original `Ok` message onto a new value, and `safeTry` returns a new
+- `andThen` doesn't copy the original `Ok` message onto a new value, and `safeTry` returns a new
   `Ok` without it. Returning `undefined` keeps the original result.
-- Only a successful `Ok` exposes [iterate](iterate.md). Narrow a possible `Err` with `.isOk` first.
+- Only a successful `Ok` exposes [iterate](iterate.md). Check `.isOk` first to narrow away a
+  possible `Err`.
 
 ## See also
 

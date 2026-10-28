@@ -6,19 +6,19 @@ back. Use it for wizards, onboarding flows, undo stacks, or any state that needs
 ## What it is
 
 A stepper stores steps, not arbitrary values. Each step is `{ key, value }`, where `key` is a
-nonempty string and `value` is whatever `T` you chose. Keys identify steps and prevent duplicates
-in the retained history.
+nonempty string and `value` is whatever `T` you picked. Keys identify steps and keep duplicates out
+of the retained history.
 
-`next(fn, options?)` is asynchronous. It calls `fn(previous, make)`, validates the returned step,
-and commits it on success. `fn` may return a step or a Promise of one. `make` is an identity helper
-that gives TypeScript the step type, so `make({ key, value })` is all you normally need.
+`next(fn, options?)` is async. It calls `fn(previous, make)`, validates the step you return, and
+commits it on success. `fn` can return a step or a Promise of one. `make` is an identity helper that
+gives TypeScript the step type, so `make({ key, value })` is usually all you need.
 
-`prev(offset = -1)` is synchronous. It returns a small resolution object that must be finished with
-`.else(recover)` or `.panic(message?)`. If the target step is still retained, the resolution
+`prev(offset = -1)` is synchronous. It returns a small resolution object that you have to finish
+with `.else(recover)` or `.panic(message?)`. If the target step is still retained, the resolution
 settles immediately. If it was evicted, `.else` asks you to rebuild it from its nearest retained
-neighbors, while `.panic` throws instead.
+neighbors, and `.panic` throws instead.
 
-Only `next` returns a `Result`. Finishing `prev` returns a step or throws.
+Only `next` returns a `Result`. Finishing `prev` gives you a step or throws.
 
 ## When to use it
 
@@ -27,12 +27,12 @@ Only `next` returns a `Result`. Finishing `prev` returns a step or throws.
 - Steps must have unique, meaningful names.
 - You want an external check on which step keys are allowed.
 
-For simple value state with no history, a plain variable is enough. For history that must survive a
-reload, persist it yourself; the stepper keeps memory only.
+For simple value state with no history, a plain variable is enough. For history that has to survive
+a reload, persist it yourself; the stepper only keeps memory.
 
 ## How to use it
 
-`createStepper` keeps the history rules together:
+`createStepper` keeps the history rules in one place:
 
 ```ts
 import { createStepper, println } from "slang-ts";
@@ -54,7 +54,7 @@ println(wizard.prev().panic().key); // welcome
 println(wizard.size); // 2
 ```
 
-Without it, a basic history is a stack and a cursor. That is the easy part; duplicate keys, a
+Without it, a basic history is a stack and a cursor. That's the easy part; duplicate keys, a
 bounded history, and rebuilding an evicted step are the parts that grow around it:
 
 ```ts
@@ -78,11 +78,11 @@ function back() {
 ```
 
 `previous` is `undefined` on the first call and the current step after that. `next` is always
-async, even when `fn` is synchronous, so await it.
+async, even when `fn` is synchronous, so remember to await it.
 
 ### Branching
 
-A successful forward commit drops any steps ahead of the current position. If you move back and
+A successful forward commit drops every step ahead of the current position. If you move back and
 commit a different step, the old forward branch is gone.
 
 ```ts
@@ -92,13 +92,13 @@ await wizard.next((_previous, make) =>
 // The profile step was ahead of welcome, so it is gone now.
 ```
 
-A key that was evicted can be used again. A key still in retained history cannot.
+A key that was evicted can be used again. A key still in retained history can't.
 
 ### Undo with evicted history
 
-When `maxHistory` is small, older steps are evicted. `prev` can still reach one if you supply a
-recovery function. It receives the nearest retained step before the target and the nearest one
-after it, either of which may be `undefined`.
+When `maxHistory` is small, older steps get evicted. `prev` can still reach one if you supply a
+recovery function. It gets the nearest retained step before the target and the nearest one after
+it, either of which may be `undefined`.
 
 ```ts
 const history = createStepper<{ text: string }>({ maxHistory: 2 });
@@ -125,13 +125,13 @@ println(history.current?.key); // first
 println(history.size);         // 2
 ```
 
-The recovered step needs a nonempty string key and a `value` property, and its key must not
-duplicate a retained one. Recovery does not run `keyEvalFn` again. Rebuilding the value is your
-job; the neighbors only tell you where you are. `.panic()` never reconstructs.
+The recovered step needs a nonempty string key and a `value` property, and its key can't duplicate
+a retained one. Recovery doesn't run `keyEvalFn` again. Rebuilding the value is your job; the
+neighbors only tell you where you are. `.panic()` never reconstructs.
 
 ### Limit total steps
 
-`maxSteps` counts successful forward commits over the stepper's lifetime. It is not the size of the
+`maxSteps` counts successful forward commits over the stepper's lifetime. It's not the size of the
 retained history.
 
 ```ts
@@ -147,12 +147,12 @@ const third = await limited.next((_previous, make) =>
 if (third.isErr) println(third.error); // Step limit reached
 ```
 
-The failed call does not commit, and `{ fallback: true }` does not bypass the limit.
+The failed call doesn't commit, and `{ fallback: true }` doesn't bypass the limit.
 
 ### Check keys
 
-`keyEvalFn` adds an acceptance check on the candidate key. It can be synchronous or async. Return
-`false` to reject it.
+`keyEvalFn` adds an acceptance check on the candidate key. It can be sync or async. Return `false`
+to reject it.
 
 ```ts
 const checkout = createStepper<{ screen: string }>({
@@ -174,11 +174,11 @@ try {
 ```
 
 Returning `false` throws `Step key rejected: <key>`. A thrown error from `keyEvalFn` becomes an
-`Err(message)` instead, or the fallback when requested. That difference matters.
+`Err(message)` instead, or the fallback when you asked for one. That difference matters.
 
 ## Notes
 
-- `maxHistory` defaults to 50 and must be a positive integer. Steps are evicted to keep the
+- `maxHistory` defaults to 50 and must be a positive integer. Steps get evicted to keep the
   retained history at or below it.
 - `maxSteps` defaults to `null` (unlimited) and must be a nonnegative integer or `null`. It counts
   successful forward commits over the stepper's lifetime, not the retained size.
@@ -197,19 +197,20 @@ Returning `false` throws `Step key rejected: <key>`. A thrown error from `keyEva
 - A `false` result from `keyEvalFn` throws `Step key rejected: <key>` (the promise rejects). A
   thrown error from `keyEvalFn` is a different path: it returns `Err` and can use the fallback.
 - A successful commit removes every step ahead of the current position, then appends the new step.
-  A failed validation does not commit.
+  A failed validation doesn't commit.
 - `prev(offset)` needs a negative integer offset. `prev()` is one step back; zero, positive, or
   fractional offsets throw.
 - Finishing a `prev()` that targets before the first step throws
   `"Cannot step before the first step"`.
-- A retained target settles immediately, and the `else` recovery function is not called.
+- A retained target settles immediately, and the `else` recovery function isn't called.
 - For an evicted target, `.else(recover)` passes `(previous, make, next)` with the nearest retained
-  neighbors. The recovered step must be valid and must not reuse a retained key, or `.else` throws.
-- `.panic(message?)` does not reconstruct. It throws your message, or `"History unavailable"` for
+  neighbors. The recovered step must be valid and can't reuse a retained key, or `.else` throws.
+- `.panic(message?)` doesn't reconstruct. It throws your message, or `"History unavailable"` for
   an evicted step, or `"Cannot step before the first step"` before the origin.
 - `current` is the step at the current position, or `undefined` before the first commit. `size` is
   the number of retained steps, not the number of commits.
-- Reconstructing an evicted step is backward navigation; it does not increase the `maxSteps` count.
+- Reconstructing an evicted step is backward navigation, so it doesn't increase the `maxSteps`
+  count.
 
 ## See also
 

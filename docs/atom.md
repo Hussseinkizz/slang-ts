@@ -4,9 +4,9 @@
 
 ## What it is
 
-Atoms look like constants but carry identity. Two atoms with the same name are not equal. That makes
-them useful for state names, event keys, and environment-style constants where accidental collision
-would be a bug.
+Atoms look like constants, but they carry identity. Two atoms with the same name aren't equal. That
+makes them useful for state names, event keys, and environment-style constants, where an accidental
+collision would be a bug.
 
 ```ts
 const userAtom = atom("kizz");
@@ -20,15 +20,15 @@ println(userAtom.description);      // "kizz"
 
 - You need a stable, unique token for a state or lifecycle value.
 - You want a readable name in logs, errors, and type hints without sharing identity.
-- You are matching states with `matchAll`, which uses the atom's description.
+- You're matching states with `matchAll`, which uses the atom's description.
 
 For plain string constants, a normal `const` is simpler. Atoms earn their place when identity
-matters.
+actually matters.
 
 ## How to use it
 
-Define atoms in one module and import them where they are used. Re-creating one at each call site
-defeats the identity.
+Define atoms in one module and import them where you need them. Re-create one at each call site
+and you lose the identity.
 
 ```ts
 import { atom, println } from "slang-ts";
@@ -50,14 +50,14 @@ atom("ready").to("option");                    // Some("ready")
 atom("ready").to("result");                    // Ok("ready")
 ```
 
-`andThen` transforms the description and returns a new atom.
+`andThen` transforms the description and gives you a new atom.
 
 ## Notes
 
-- `andThen` is sync only. Returning a non-string or throwing panics.
-- Returning `undefined` from `andThen` keeps the original atom.
-- `matchAll` matches atoms by their description, not by identity. That is intentional, but do not
-  confuse it with equality.
+- `andThen` is sync only. Return a non-string or throw, and it panics.
+- Return `undefined` from `andThen` and you keep the original atom.
+- `matchAll` matches atoms by description, not identity. That's intentional, so don't confuse it
+  with equality.
 - `atom.to("option")` and `atom.to("result")` use the description.
 
 ## See also

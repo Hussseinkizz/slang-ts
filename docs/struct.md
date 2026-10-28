@@ -1,12 +1,12 @@
 # struct
 
-`struct(input)` reads, shapes, and merges plain records. It also groups an array of records by a
+`struct(input)` reads, shapes, and merges plain records, and it can group an array of records by a
 key. Every operation returns a fallible result you finish with `.else(...)` or `.panic(...)`.
 
 ## What it is
 
-`struct` accepts a plain record, an array of records, or a narrowed successful `Ok` holding either.
-An `Err` is refused with `INVALID_INPUT`.
+You can pass a plain record, an array of records, or a narrowed successful `Ok` holding either. An
+`Err` is refused with `INVALID_INPUT`.
 
 The returned `StructChain<T>` is a `Fallible<T>`:
 
@@ -15,8 +15,8 @@ The returned `StructChain<T>` is a `Fallible<T>`:
 - `outcome`: the underlying `Result<T, string>`.
 - `code`: the failure code, or `undefined` on success.
 
-Record operations (`get`, `pick`, `omit`, `merge`, `count`, `prune`) need a record. Collection
-operations (`countBy`, `keyBy`) need an array. Using one on the wrong shape fails with
+Record operations (`get`, `pick`, `omit`, `merge`, `count`, `prune`) need a record, and collection
+operations (`countBy`, `keyBy`) need an array. Use one on the wrong shape and it fails with
 `INVALID_INPUT`.
 
 ## When to use it
@@ -50,11 +50,11 @@ const server = struct(config).get("server").else({ host: "localhost", port: 3000
 println(server.port); // 8080
 ```
 
-`get` takes a string key or an array path. A string is a single key; it is not split on dots.
-`get(["server", "port"])` walks two levels. A known top-level key keeps its type, so `get("server")`
-returns the type of `config.server`. A nested or unknown path is `unknown`.
+`get` takes a string key or an array path. A string is a single key, so it isn't split on dots.
+`get(["server", "port"])` walks two levels. A known top-level key keeps its type, which means
+`get("server")` returns the type of `config.server`. A nested or unknown path is `unknown`.
 
-Only own properties are read. A missing key, or a path through a value that is not a record, fails
+Only own properties are read. A missing key, or a path through a value that isn't a record, fails
 with `OUT_OF_BOUNDS` unless you supply a fallback.
 
 ```ts
@@ -80,9 +80,9 @@ const publicUser = struct(user).omit("password").panic();
 println("password" in publicUser); // false
 ```
 
-`pick` keeps the named keys that exist. `omit` drops the named keys and leaves the rest. Both
-return new records; neither mutates the input. Missing `pick` keys are dropped quietly, and unknown
-`omit` keys are ignored.
+`pick` keeps the named keys that exist, and `omit` drops the named keys and leaves the rest. Both
+return new records, and neither mutates your input. Missing `pick` keys are dropped quietly, and
+unknown `omit` keys are ignored.
 
 ### Deep merge a patch
 
@@ -101,7 +101,7 @@ println(replaced.tags); // ["web"]
 ```
 
 `merge` walks plain objects and combines their keys. Arrays and other values are replaced, not
-concatenated. It never mutates the base or the patch, and it skips `__proto__`, `constructor`, and
+concatenated. It never mutates your base or your patch, and it skips `__proto__`, `constructor`, and
 `prototype` at every level.
 
 ### Group rows
@@ -126,8 +126,8 @@ const latest = struct([
 println(latest[1]?.value); // "last"
 ```
 
-`countBy` counts rows per key. `keyBy` keeps one row per key; the last row wins. Group keys are
-stringified, so the number `1` becomes the key `"1"`. Both need an array; a record fails with
+`countBy` counts rows per key. `keyBy` keeps one row per key, and the last row wins. Group keys are
+stringified, so the number `1` becomes the key `"1"`. Both need an array, so a record fails with
 `INVALID_INPUT`.
 
 ### Resolve a failure
@@ -141,7 +141,7 @@ const name = struct(user).get("name").panic();
 println(name); // "Ada"
 ```
 
-`.else` accepts a value or a function. `.panic` throws with the failure message, or with the message
+`.else` takes a value or a function. `.panic` throws with the failure message, or with the message
 you pass.
 
 ## Notes
@@ -150,15 +150,14 @@ you pass.
   `"server.port"` key, not two levels.
 - A known top-level key keeps its type. A nested, unknown, or array path is `unknown`. A fallback
   on a known top-level key widens the result to the value type or the fallback type.
-- `merge` skips `__proto__`, `constructor`, and `prototype` at every level. Nested objects that the
-  source does not touch stay shared with the original.
-- `count` counts own enumerable top-level keys. It does not recurse, and it does not accept an
-  array.
+- `merge` skips `__proto__`, `constructor`, and `prototype` at every level. Nested objects the
+  source doesn't touch stay shared with the original.
+- `count` counts own enumerable top-level keys. It doesn't recurse, and it won't accept an array.
 - `countBy` counts rows per stringified key. `keyBy` keeps the last row for a duplicate key. Both
   return plain objects; `__proto__` stays a data key.
 - `prune` drops Slang-falsy values by default and keeps `0` and `false`. Its predicate receives the
   value and the key. It needs a record.
-- A wrong shape for the operation is `INVALID_INPUT`. A missing `get` path is `OUT_OF_BOUNDS`.
+- A wrong shape for the operation is `INVALID_INPUT`, and a missing `get` path is `OUT_OF_BOUNDS`.
   Chains short-circuit on the first failure, and the code survives.
 
 ## See also

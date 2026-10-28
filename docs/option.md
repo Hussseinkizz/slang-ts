@@ -1,14 +1,14 @@
 # Option
 
-`option(value)` wraps a value that may or may not be present. It returns `Some(value)` when the
-value is usable and `None` when it is not.
+`option(value)` wraps a value that may or may not be there. You get `Some(value)` when the value is
+usable and `None` when it isn't.
 
 ## What it is
 
-Option is the small, explicit answer to "maybe this value exists". Use it instead of passing `null`
-or `undefined` around and remembering to check at every call site.
+Option is a small, explicit way to say "maybe this value exists". Use it instead of passing `null`
+or `undefined` around and hoping every call site remembers to check.
 
-`option()` treats these as `None`:
+`option()` gives you `None` for these:
 
 - `null`
 - `undefined`
@@ -16,16 +16,17 @@ or `undefined` around and remembering to check at every call site.
 - `NaN`
 - `Infinity` and `-Infinity`
 
-It treats `0` and `false` as `Some`. Those are usually intentional values, not missing ones.
+`0` and `false` come back as `Some`. You usually set those on purpose, so they aren't treated as
+missing.
 
 ## When to use it
 
-- A config or environment value may be absent, but `0` or `false` are valid.
-- A lookup can miss, and you want the miss to be explicit rather than a null check.
-- You want to transform a value only when it exists.
+- A config or environment value might be absent, but `0` or `false` are valid values.
+- A lookup can miss, and you'd rather handle the miss explicitly than write another null check.
+- You only want to transform a value when it's actually there.
 
-If you need a failure reason, use [Result](result.md) instead. If the value comes from several
-inconsistent sources, [Options](match.md#options) can normalize them.
+If you need a reason for the failure, use [Result](result.md) instead. If the value comes from
+several sources with inconsistent shapes, [Options](match.md#options) can normalize them.
 
 ## How to use it
 
@@ -49,7 +50,8 @@ if (b.isNone) {
 
 ### Expect
 
-`expect()` unwraps `Some` and throws for `None`. Use it when a missing value is a real bug.
+`expect()` gives you the `Some` value and throws on `None`. Use it when a missing value means
+something is actually broken.
 
 ```ts
 const age = option(25).expect("A person must have an age");
@@ -61,7 +63,7 @@ option("").expect("A person must have an age");
 
 ### Unwrap with else
 
-`unwrap()` starts a chain that must be finished with `.else(...)`. The fallback can be a value or a
+`unwrap()` starts a chain you have to finish with `.else(...)`. The fallback can be a value or a
 function.
 
 ```ts
@@ -74,7 +76,7 @@ println("Retries:", retries);
 
 ### Transform with andThen
 
-`andThen` runs only for `Some` and keeps the wrapper type.
+`andThen` only runs for `Some`, and you still get an `Option` back.
 
 ```ts
 option(5).andThen((x) => x * 2);          // Some(10)
@@ -83,7 +85,7 @@ option(5).andThen(() => undefined);       // Some(5) - original
 option(42).andThen((x) => x.toString());  // Some("42")
 ```
 
-Async functions are supported:
+Async callbacks work too:
 
 ```ts
 const data = await option(5).andThen(async (x) => await fetchData(x));
@@ -91,17 +93,17 @@ const data = await option(5).andThen(async (x) => await fetchData(x));
 
 ## Notes
 
-- `Some` is the truthy path, but Slang's definition of truthy is not JavaScript's. `0` and `false`
-  are present; `""`, `NaN`, and infinities are not.
-- `expect()` throws for `None`. Use it for invariants you do not expect to recover from.
-- `unwrap()` must be finished with `.else(...)`. Leaving it hanging throws.
-- For `None`, the fallback must be truthy. `option(null).unwrap().else(0)` throws
+- `Some` is the truthy path, but Slang's idea of truthy isn't JavaScript's. `0` and `false` count
+  as present; `""`, `NaN`, and the infinities don't.
+- `expect()` throws on `None`. Save it for invariants you don't plan to recover from.
+- You have to finish `unwrap()` with `.else(...)`. Leave it hanging and it throws.
+- For `None`, the fallback has to be truthy. `option(null).unwrap().else(0)` throws
   `"Fallback must be truthy"`.
-- For `Some`, `.else(...)` is still required, but its value is ignored.
-- `andThen` catches a thrown error and returns `None`. Returning `undefined` keeps the original
-  `Some` instead of creating a new one.
-- Passing an existing `Option` to `option()` wraps it as a value, because an object is usable. Use the
-  option you already have, or `.to("option")`, when you want it unchanged.
+- For `Some`, you still need `.else(...)`, but its value is ignored.
+- `andThen` catches a thrown error and gives you `None`. Return `undefined` and you keep the
+  original `Some` instead of getting a new one.
+- If you pass an existing `Option` to `option()`, it gets wrapped as a value, since an object counts
+  as usable. Use the option you already have, or `.to("option")`, when you want it unchanged.
 
 ## See also
 
