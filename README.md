@@ -107,7 +107,7 @@ import { option, Ok, Err, atom, match } from "slang-ts";
 - [println][logging] (with `setEnvironment`)
 - [createStepper][stepper]
 
-Full reference: [docs index][docs-index]. Feature list: [CHANGELOG.md][changelog].
+Full reference: [docs index][docs-index]. Feature list: [CHANGELOG.md][changelog]. Agent guide: [skill/SKILL.md](skill/SKILL.md).
 
 ## Real-world examples
 
@@ -287,3 +287,4 @@ MIT License. See [LICENSE][license].
 [docs-index]: https://github.com/Hussseinkizz/slang/blob/main/docs/README.md
 [changelog]: https://github.com/Hussseinkizz/slang/blob/main/CHANGELOG.md
 [license]: https://github.com/Hussseinkizz/slang/blob/main/LICENSE
+[skill]: https://github.com/Hussseinkizz/slang/blob/main/skill/SKILL.md
