@@ -73,9 +73,6 @@ try {
 }
 ```
 
-These examples use `localStorage` for the lookup. In Node, swap it for whatever storage your
-platform gives you.
-
 ### Unwrapping wrappers
 
 `safeTry` also unwraps Slang wrappers, so a returned `Option` or `Atom` doesn't need its own

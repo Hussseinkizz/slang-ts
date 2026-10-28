@@ -40,7 +40,7 @@ if (result.isOk) {
 }
 ```
 
-`println` is optional. It's a small development logger, and `console.log` works just fine.
+`println` is optional — it's a small development logger.
 
 ## Imports
 
@@ -50,11 +50,7 @@ Import only what you use:
 import { option, Ok, Err, atom, match } from "slang-ts";
 ```
 
-A namespace import (`import * as slang from "slang-ts"`) also works.
-
 ## Choose by problem
-
-Not sure where to start? Find your problem in the table and follow the link:
 
 | If you need… | Use |
 |---|---|
@@ -155,9 +151,6 @@ try {
 }
 ```
 
-`localStorage` is browser-only. In Node, use whatever storage your platform gives you and keep the
-same shape.
-
 Full detail: [SafeTry][safe-try] and [Result][result].
 
 ### Call an API with a timeout and retries: SuperPromise
@@ -253,9 +246,6 @@ Contributions are welcome.
 - Node.js 20+ or a modern browser.
 - TypeScript 5.9.x or 7.0.x if you want the bundled types. Plain JavaScript works too.
 - Zero runtime dependencies.
-
-The SuperPromise example uses `fetch`, and the SafeTry one uses `localStorage`. Swap those for
-whatever your platform provides.
 
 ## License
 

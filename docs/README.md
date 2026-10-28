@@ -52,13 +52,6 @@ use it, and the details worth knowing before you rely on it.
 - [println](logging.md): development logging that stays out of production.
 - [createStepper](stepper.md): bounded, navigable keyed step history.
 
-## A note on examples
-
-The examples print with `println`. It's optional, so use `console.log` if you prefer. The SafeTry
-example uses `localStorage`, which only exists in the browser; in Node, use whatever storage your
-platform gives you. Examples that call `fetch` expect a runtime that has it (modern browsers and
-Node.js 20+).
-
 ## For contributors
 
 - [SuperPromise specification](superpromises.spec.md)
