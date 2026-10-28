@@ -1,7 +1,7 @@
 {
   "name": "slang-ts",
   "version": "0.2.0",
-  "description": "Functional programming library for TypeScript: Option, Result, pattern matching, and async primitives",
+  "description": "Functional programming utilities for TypeScript: Option, Result, SafeTry, pattern matching, async control, and data helpers",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -14,8 +14,12 @@
   },
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -62,7 +66,9 @@
   ],
   "author": "Hussein Kizz",
   "license": "MIT",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js"
+  ],
   "devDependencies": {
     "@types/bun": "latest",
     "@vitest/ui": "^4.1.10",
@@ -72,5 +78,10 @@
   },
   "peerDependencies": {
     "typescript": "^5.9.3 || ^7.0.2"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }

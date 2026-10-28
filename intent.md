@@ -225,3 +225,29 @@ there would be noise rather than relief.
 
 Backup: `backup/readme-docs-2026-10-28/` (README plus all docs pages) and
 `backup/readme-docs-contrast-2026-10-28/` (the five edited reference pages).
+
+## New-user onboarding pass (2026-10-28)
+
+A first-time-user review found the main blocker: npm latest is 0.1.1 while the source and docs
+describe 0.2.0. The README now carries a short version note until 0.2.0 is published. Publishing
+remains a manual step; no publish was run.
+
+The README is reorganized around the first minute: badges, install, requirements, a runnable quick
+start, imports, a problem-first table, a complete linked utility map, the existing real-world
+examples, development, contributing, and license. The old 28-item checklist is gone; its content
+is folded into the linked map, with methods grouped under Option and Result. Release history moves
+to `CHANGELOG.md`.
+
+All README links to repo files use absolute GitHub URLs so they survive npm rendering. Package
+metadata adds a Node 20+ engine floor, an optional TypeScript peer, `CHANGELOG.md` in the published
+files, and a description that matches the current scope. The bundled entry is marked side-effectful
+so the `.to()` converters register reliably after bundling; this replaces the unsafe
+`sideEffects: false` flag. `example.ts` is no longer advertised as a consumer example; it gets an
+internal-playground header. CI was intentionally not added.
+
+The docs index notes the source version and the example assumptions (`println` optional,
+browser-only `localStorage`, `fetch` availability). No docs site yet: the content is navigable at
+this size; revisit after 1.0 or when the docs outgrow the index.
+
+Impact: README, docs, package metadata, and the example header only. No library source, tests,
+version bump, or publish. Backup: `backup/readme-onboarding-2026-10-28/`.

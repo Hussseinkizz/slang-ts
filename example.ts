@@ -1,3 +1,7 @@
+/**
+ * Internal development playground.
+ * For the consumer-facing tour, see README.md and docs/.
+ */
 import {
   atom,
   createChannel,
