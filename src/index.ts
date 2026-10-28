@@ -37,6 +37,31 @@ export { zip, zipWith, unzip } from "./zip";
 // SafeTry
 export { safeTry } from "./safe-try";
 
+// Fallible collection chains
+export type { Fallible, SlangErrorCode } from "./fallible";
+export { list } from "./list";
+export type { ListChain, ListGet, ListInput } from "./list";
+export { struct } from "./struct";
+export type { StructChain, StructGet } from "./struct";
+export { sets } from "./sets";
+export type { SetsChain, SetsInput } from "./sets";
+export type { IterateChain } from "./iterate";
+export { memoized } from "./memoized";
+export type { Memoized } from "./memoized";
+export { taskGroup } from "./task-group";
+export type { TaskGroup, TaskGroupOptions } from "./task-group";
+export { createStepper } from "./stepper";
+export type {
+  Stepper,
+  Step,
+  StepFn,
+  StepFactory,
+  StepperConfig,
+  NextOptions,
+  PrevRecover,
+  PrevResolution,
+} from "./stepper";
+
 // Pipe
 export { pipe } from "./pipe";
 export type { PipeFn, PipeEachContext, PipeRunOptions, Pipeline } from "./pipe";

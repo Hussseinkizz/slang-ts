@@ -3,6 +3,7 @@ import type { Result } from "./result";
 import { createSignal } from "./signal";
 import { evaluateValue, ACTIVATE_HOOK, describeThrown } from "./internals";
 import type { Activatable } from "./internals";
+import type { TaskGroup } from "./task-group";
 
 /** The operation itself. Receives the attempt's AbortSignal. */
 export type Executor<T> = (
@@ -29,6 +30,8 @@ export type SuperPromiseOptions = {
   retry?: number;
   /** Keep retrying until the stop signal fires. Overrides `retry` and `delay`. */
   retryUntil?: RetryUntilOptions;
+  /** Shared scheduler this task coordinates through. A retry reacquires admission. */
+  group?: TaskGroup;
 };
 
 /** A single async operation with lifecycle ergonomics. Promise-compatible. */
@@ -127,6 +130,11 @@ export function superPromise<T>(
     attempt: AbortController,
     stop: AbortSignal | undefined,
   ): Promise<AttemptOutcome<T>> => {
+    const release = options.group !== undefined ? await options.group.acquire() : () => {};
+    if (controller.signal.aborted) {
+      release();
+      return { kind: "aborted" };
+    }
     let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unlinkStop = stop !== undefined ? linkAbort(stop, attempt) : () => {};
@@ -142,6 +150,7 @@ export function superPromise<T>(
       if (timer !== undefined) clearTimeout(timer);
       unlinkStop();
       unlinkMaster();
+      release();
       return outcome;
     };
 

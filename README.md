@@ -34,9 +34,27 @@ npm i slang-ts
 - [x] SuperPromise (abort, reject, resolve, defer)
 - [x] SuperRunner (sequence, all, race)
 - [x] Channel (send, subscribe, when)
+- [x] list (strict indexed collections)
+- [x] struct (safe access, shaping, grouping)
+- [x] sets (membership and set algebra)
+- [x] Ok.iterate (lazy collection pipeline)
+- [x] memoized (argument-based caching)
+- [x] taskGroup (shared concurrency and start spacing)
+- [x] createStepper (bounded keyed history)
 - [x] scheduleMicrotask (internal scheduling helper)
 
 All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tree/main/tests)
+
+## New in v0.2.0
+
+- **list**: strict indexed collections with `get`, `take`, `skip`, `range`, `chunk`, `count`, and `prune`.
+- **struct**: safe record access, `pick`/`omit`/`merge` shaping, and `countBy`/`keyBy` grouping.
+- **sets**: membership and set algebra, including arrays, iterables, Maps (keys), and object keys.
+- **Ok.iterate**: lazy `map`, `filter`, `flatMap`, `take`, `drop`, `chunk`, `reduce`, `count`, and `toArray` on a successful Result.
+- **memoized**: argument-based caching with identity semantics for objects and rejected-Promise eviction.
+- **taskGroup**: shared concurrency and start spacing for SuperPromises, with retries reacquiring admission.
+- **createStepper**: bounded keyed step history with backward recovery and explicit `prev` resolution.
+- **Typed adapters**: `list`, `struct`, and `sets` keep their element, row, and key types; `get` fallbacks widen the result type correctly.
 
 ## New in v0.1.1
 
@@ -676,6 +694,143 @@ channel.when({
   data: { workflowId },
 });
 ```
+
+## New utilities
+
+These extend the library without changing the existing APIs. A fixable collection operation returns a
+fallible chain, so the caller must finish with `.else(...)` or `.panic(...)`.
+
+### list
+
+`list` wraps a finite array and keeps bounds strict. It never clamps an invalid range; a negative
+index counts from the end, and a negative `skip` count drops items from the end.
+
+```ts
+import { list } from "slang-ts";
+
+list([10, 20, 30, 40, 50]).take(2).else([]);      // [10, 20]
+list([10, 20, 30, 40, 50]).skip(-2).else([]);     // [10, 20, 30]
+list([10, 20, 30, 40, 50]).range(1, 4).else([]);  // [20, 30, 40]
+list([10, 20, 30]).range(1, 99).code;             // "OUT_OF_BOUNDS"
+list([0, false, "", null, 5]).prune().else([]);   // [0, false, 5]
+```
+
+`get`, `take`, `skip`, `range`, `chunk`, `count` and `prune` are available. A narrowed successful
+`Ok` holding an array is accepted; an `Err` is refused.
+
+### struct
+
+`struct` reads and reshapes plain records, and aggregates collections of records.
+
+```ts
+import { struct } from "slang-ts";
+
+const user = { id: 1, name: "Ada", profile: { city: "Kampala" } };
+struct(user).get(["profile", "city"]).else("unknown"); // "Kampala"
+struct(user).pick("id", "name").else({});               // { id: 1, name: "Ada" }
+struct(user).omit("id").else({});                       // { name: "Ada", profile: ... }
+
+const rows = [{ role: "admin" }, { role: "user" }, { role: "admin" }];
+struct(rows).countBy((row) => row.role).else({});       // { admin: 2, user: 1 }
+struct(rows).keyBy((row) => row.role).else({});         // last row for each key wins
+```
+
+`get` only reads own properties, `merge` deep-merges plain objects without mutating them, and
+`prune` keeps `0` and `false` while dropping Slang's falsy values.
+
+### sets
+
+`sets` normalizes an array, iterable, `Set`, `Map` (its keys), or plain object (its keys) into
+membership operations.
+
+```ts
+import { sets } from "slang-ts";
+
+sets({ read: true, write: false }).has("write").else(false); // true
+sets([1, 2, 2, 3]).unique().else(new Set());                 // Set(1, 2, 3)
+sets([1, 2]).union([2, 3]).else(new Set());                  // Set(1, 2, 3)
+sets([1, 2, 3]).difference([2]).else(new Set());             // Set(1, 3)
+```
+
+Comparison follows native `Set` semantics: primitives by value, objects by identity. A narrowed
+successful `Ok` holding any supported input is accepted; an `Err` is refused.
+
+### Ok.iterate
+
+A successful `Result` can expose its collection as a lazy pipeline. Only the success path has
+`iterate()`; narrow a possible `Err` with `.isOk` first.
+
+```ts
+import { Ok } from "slang-ts";
+
+const names = Ok(users)
+  .iterate()
+  .filter((user) => user.active)
+  .map((user) => user.name)
+  .take(100)
+  .toArray()
+  .else([]);
+```
+
+The chain supports `map`, `filter`, `flatMap`, `take`, `drop`, `chunk`, `reduce`, `count` and
+`toArray`. Transformations are lazy, `take` stops the source early, and a one-shot iterator
+cannot be silently replayed. A non-iterable value fails at the terminal.
+
+### memoized
+
+`memoized` caches a function by its arguments. Primitives compare by value and objects by identity;
+`undefined` is a valid cached result. A rejected Promise is evicted so a later call can retry.
+
+```ts
+import { memoized } from "slang-ts";
+
+const expensive = memoized((a: number, b: number) => compute(a, b));
+expensive(1, 2); // computes
+expensive(1, 2); // cache hit
+expensive.clear();
+```
+
+### taskGroup
+
+A task group shares concurrency and start spacing across tasks and runners. A retry is a new
+admission, and a running task is never cancelled by the throttle.
+
+```ts
+import { superPromise, taskGroup, superRunner } from "slang-ts";
+
+const api = taskGroup("upstream-api", { concurrency: 3, throttle: 200 });
+
+const runner = superRunner({
+  type: "all",
+  runners: {
+    users: superPromise(fetchUsers, { group: api }),
+    posts: superPromise(fetchPosts, { group: api }),
+  },
+});
+```
+
+### createStepper
+
+`createStepper` keeps a bounded, navigable history of keyed steps. `next` runs the caller's function
+and commits a validated step; `prev` moves backward and must be finished with `.else(recover)` or
+`.panic(...)`.
+
+```ts
+import { createStepper } from "slang-ts";
+
+const steps = createStepper<{ screen: string }>({ maxHistory: 50 });
+const first = await steps.next((previous, make) =>
+  make({ key: "welcome", value: { screen: "welcome" } }),
+);
+
+const earlier = steps.prev().else((previous, make, next) =>
+  make({ key: "restored", value: reconstruct(previous, next) }),
+);
+```
+
+`maxHistory` defaults to 50 and `maxSteps` defaults to unlimited. Duplicate retained keys panic,
+while a key may be reused after its step has been evicted. `keyEvalFn` can add an external
+acceptance check. Concurrent `next` calls are serialized.
 
 ## Code Samples
 

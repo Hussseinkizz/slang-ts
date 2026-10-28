@@ -1,4 +1,6 @@
 import { scheduleMicrotask, describeThrown, isResult, panicNestedResult } from "./internals";
+import { iterateOf } from "./iterate";
+import type { IterateChain } from "./iterate";
 
 declare const __result__: unique symbol;
 
@@ -12,6 +14,11 @@ export type Ok<T> = {
   readonly isOk: true;
   readonly isErr: false;
   readonly [__result__]: true;
+  /**
+   * Lazily transforms the successful collection. Only a successful Result exposes this;
+   * a possible `Err` must be narrowed with `.isOk` first.
+   */
+  iterate(): IterateChain<T>;
 };
 
 export type Err<E> = {
@@ -148,6 +155,7 @@ export function buildOk<T>(value: T, message?: string): Ok<T> & ResultMethods<T>
       };
     }) as () => { else(fallback: T | (() => T)): T },
     andThen,
+    iterate: () => iterateOf<T>((ok as Ok<T>).value),
   };
 
   return withMethods as Ok<T> & ResultMethods<T>;

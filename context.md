@@ -150,3 +150,81 @@ covers `Ok`, `Options`, `SuperPromise` and `to`; `safeTry` panics on a nested on
 message, "A Result cannot be nested inside another Result".
 
 Verification: 383 tests across 18 files, typecheck clean. Version and publication untouched.
+
+## 12. Collection utilities and Stepper
+
+The utility specification and its decision record are implemented: `list`, `struct`, `sets`,
+`Ok.iterate`, `memoized`, `taskGroup`, and `createStepper`. A shared `Fallible<T>` in
+`src/fallible.ts` carries the `Result`, a stable `SlangErrorCode`, and the mandatory
+`.else()`/`.panic()` terminals. `list`, `struct`, and `sets` accept a raw value or a narrowed
+successful `Ok`; `isResult` is used for the runtime check so a plain object with an `isOk` field is
+not mistaken for a Result.
+
+`Ok.iterate` is deliberately not on `ResultMethods` or `Err`: it is a success-path capability.
+The first implementation put a conditional element type in the chain's public signature, which
+made `Result<T>` and `SuperPromise<T>` invariant in nested callback positions and broke existing
+pipe/runner assignments. The fix was to make the chain's type parameter the *collection* and mark
+it `out C` (`IterateChain<out C>`), extracting elements with an internal `ElementOf<C>` helper.
+That keeps `Result<string>` assignable to `Result<unknown>` while still giving `map` callbacks the
+element type.
+
+`take` reads exactly `n` values and closes the source iterator; it does not consume one extra value
+to discover the end. A one-shot iterator is detected at construction and a second terminal returns
+an `INVALID_INPUT` failure rather than replaying an exhausted source.
+
+`struct` counts and indexes collections with `Object.fromEntries`, which makes `__proto__` an own
+property. `pick`, `omit`, and `prune` also build their result through `Object.fromEntries`, so a
+prototype-looking key stays a data property instead of changing the result's prototype. `get` and
+`pick` read own properties only. `countBy`/`keyBy` infer the row type from the collection passed to
+`struct`. `list.get` and `struct.get` use a rest-tuple fallback so an explicit `undefined` fallback is
+a successful value rather than "no fallback".
+
+`createStepper` stores retained steps by logical index in a `Map`, so evicted positions are holes
+rather than shifted array indices. Forward generations are serialized through a promise queue.
+Backward navigation to a retained step updates the current position; reconstruction can restore an
+older hole without evicting the reconstructed step to satisfy `maxHistory`, and `prev` before the
+logical origin throws. A later `next` commits at the new position and drops the abandoned forward
+branch only after duplicate and `keyEvalFn` validation pass. Duplicate retained keys and a rejected
+`keyEvalFn` panic even with `{ fallback: true }`.
+
+`taskGroup` grants admission in a loop (no recursion on a large queue), spaces starts when
+`throttle > 0`, and recovers when a running task releases. `superPromise` acquires before each
+attempt and releases in `finish`, so a retry reacquires and a running task is never cancelled by
+the throttle.
+
+Verification: 452 tests across 25 files pass, `bun run typecheck` is clean, and `bun run build`
+produces `dist/index.js` (22.90 kB) and `dist/index.d.ts` (39.08 kB). README documents the new
+utilities; both specification documents now say implemented. Pre-change files are preserved in
+`backup/utilities-finish-2026-10-28/`.
+
+## 13. v0.2.0 review and release preparation
+
+The pre-release review fixed the gaps that the first implementation left:
+
+- `SetsChain` is generic (`SetsChain<T>`), `SetsElement` extracts the contributed element type, and
+  the overloads cover arrays, iterables, `Set`, `Map`, `ReadonlyMap`, object keys, and narrowed
+  `Ok`s. `union` widens the element type; `intersection`/`difference` keep the left type.
+- `StructGet<T>` types a known top-level key as `T[K]`, while an unknown path stays `unknown`; a
+  fallback widens to `T[K] | U`. `struct.keyBy` now returns the inferred row type instead of
+  `unknown`, via `StructRow<T>`.
+- `ListGet<T>` has a typed fallback overload, so `get(9, "none")` is `T | string` rather than an
+  unsound `T`.
+- Stepper backward navigation to a retained step updates `position`; a later `next` commits at that
+  position and discards the abandoned branch only after duplicate-key and `keyEvalFn` validation.
+  `maxSteps` counts lifetime commits, not retained history.
+- `pick`, `omit`, `prune`, `countBy`, and `keyBy` build with `Object.fromEntries`, so
+  `__proto__` stays a data key. `merge` validates both sides as plain records and skips
+  `__proto__`/`constructor`/`prototype`.
+- Task-group release is idempotent per admission, so a double release cannot free another task's
+  slot.
+- `SlangErrorCode` is now limited to the fallible collection chains. Stepper deliberately exposes a
+  plain `Result` message and panics on invalid keys/boundaries; it has no code surface.
+
+Missing edge-case and type tests were added across the suites, including `tests/types.spec.ts` for
+adapter inference, `Result`/`SuperPromise` wide assignments, and the success-only `iterate` surface.
+Final verification: `bun run export` passes with **490 tests across 26 files**, a clean typecheck, and
+`dist/index.js` (23.00 kB, 7.57 kB gzip) / `dist/index.d.ts` (40.57 kB, 12.18 kB gzip).
+
+`package.json` now declares `0.2.0`. README carries the v0.2.0 release notes, and the utility
+specification baseline is v0.2.0. No package is published; release remains a separate maintainer
+action.

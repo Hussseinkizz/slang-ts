@@ -147,3 +147,47 @@ stays exactly as it is.
 - New tests cover: an `Error` keeps its message, a string is unchanged, an object with
   `message`/`error`/`reason` returns that field, a bigint and a cyclic object do not throw, and a
   long payload is truncated.
+
+## Utility extensions (2026-10-28)
+
+Implemented `slang-utilities-spec.md` and `slang-utilities-decisions.md`: `list`, `struct`, `sets`,
+`Ok.iterate`, `memoized`, `taskGroup`, and `createStepper`. A shared `Fallible<T>` chain carries the
+outcome, a stable error code, and mandatory `.else()`/`.panic()` resolution.
+
+Defaults chosen for the open questions:
+
+- `maxHistory` is 50.
+- `prev()` before the logical first step throws; it never invents an origin.
+- `keyBy` is last-wins; grouping keys are stringified and built with `Object.fromEntries`, so
+  `__proto__` is an own property rather than a prototype mutation. `pick`, `omit`, and `prune` use
+  the same own-property construction.
+- `merge` deep-merges plain objects, replaces arrays and other values, and skips
+  `__proto__`/`constructor`/`prototype`.
+- Retrying a `SuperPromise` reacquires its task-group admission; `taskGroup` has no debounce yet.
+- Stepper `prev()` updates the current position, including when the target is still retained; a
+  later `next` then replaces the abandoned forward branch.
+
+`Ok.iterate` is a success-path method only. Marking `IterateChain<out C>` covariant keeps
+`Result<T>` assignable across `T` while the chain's type parameter is the collection, so `map`
+callbacks receive the element type. A one-shot iterator is consumed once; a second terminal fails
+instead of silently replaying it.
+
+### Final review and v0.2.0
+
+The pre-release review closed these gaps:
+
+- Generic `SetsChain<T>`/`SetsElement` typing, including `ReadonlyMap`; `union` widens, the other
+  algebra keeps the left element type.
+- `StructGet<T>` preserves a known top-level key type and widens only with a fallback;
+  `struct.keyBy` returns the inferred row type.
+- `ListGet<T>` types fallback widening correctly.
+- Stepper `prev()` updates `position`; forward commits discard the abandoned branch only after
+  duplicate/`keyEvalFn` validation. `maxSteps` counts lifetime commits.
+- Prototype-safe `pick`/`omit`/`prune`/`countBy`/`keyBy`; `merge` validates both records.
+- Idempotent task-group release per admission.
+- `SlangErrorCode` covers only fallible collection chains; Stepper keeps plain messages/panics.
+
+Edge-case and type tests were added, including `tests/types.spec.ts` and cross-runner task-group
+coverage. Final `bun run export`: **490 tests across 26 files**, clean typecheck, `dist/index.js` 23.00 kB and `dist/index.d.ts`
+40.57 kB. `package.json` is `0.2.0`, README and the specification baseline say v0.2.0. Not
+published. Pre-change files are in `backup/utilities-finish-2026-10-28/`.
