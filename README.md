@@ -5,9 +5,8 @@
 
 An opinionated functional programming library for TypeScript.
 
-I took the utilities I kept reaching for in Rust and Erlang and built them from scratch, with zero
-dependencies. No giant abstraction layer to learn. Just small tools that make your everyday code
-read a little nicer.
+A collection of utilities and mechanisms brought over from languages like Rust and Erlang. Each
+utility is deliberately selected and built from scratch with zero dependencies.
 
 ## Install
 

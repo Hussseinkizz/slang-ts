@@ -261,11 +261,12 @@ of the README, just before the license.
 `CHANGELOG.md` is now a feature and change list grouped by area. Version headings, dates, and the
 "unreleased" label are gone, so the file never needs editing just because a release happened.
 
-The "Why I Made This?" heading and paragraph are untouched. The rest of the README and every docs
-reference page speak to the reader as "you", use contractions, and keep the author's practical,
-informal tone. Obvious platform notes were removed: the browser-only `localStorage` explanation,
-the `fetch` availability note, and the `console.log` fallback. Code blocks, headings, links, type
-signatures, and technical claims are unchanged.
+The "Why I Made This?" heading and paragraph are untouched. The intro keeps the author's original
+wording, including "utilities and mechanisms." The rest of the README and every docs reference page
+speak to the reader as "you", use contractions, and keep the author's practical, informal tone.
+Obvious platform notes were removed: the browser-only `localStorage` explanation, the `fetch`
+availability note, and the `console.log` fallback. Code blocks, headings, links, type signatures,
+and technical claims are unchanged.
 
 Impact: README, `CHANGELOG.md`, and docs prose only. No library source, tests, package metadata, or
 publish. Backup: `backup/readme-tone-2026-10-28/`.
