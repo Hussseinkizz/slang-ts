@@ -1,4 +1,4 @@
-import { scheduleMicrotask } from "./internals";
+import { scheduleMicrotask, describeThrown, isResult, panicNestedResult } from "./internals";
 
 declare const __result__: unique symbol;
 
@@ -7,6 +7,8 @@ export type Ok<T> = {
   value: T;
   /** Optional description of the success, such as a message to show the user. */
   readonly message?: string;
+  /** Non-enumerable diagnostic payload, set by a collected or raw result. */
+  readonly raw?: unknown;
   readonly isOk: true;
   readonly isErr: false;
   readonly [__result__]: true;
@@ -15,6 +17,8 @@ export type Ok<T> = {
 export type Err<E> = {
   type: "Err";
   error: E;
+  /** Non-enumerable diagnostic payload for the underlying cause. */
+  readonly raw?: unknown;
   readonly isOk: false;
   readonly isErr: true;
   readonly [__result__]: true;
@@ -22,6 +26,30 @@ export type Err<E> = {
 
 /** Discriminated union: mutually exclusive Ok or Err */
 export type Result<T, E> = (Ok<T> | Err<E>) & ResultMethods<T>;
+
+/**
+ * Rest-parameter guard: a required element only when `T` is a Result, so wrapping a
+ * Result in another Result fails to compile while ordinary calls keep their inference.
+ */
+export type NestedResultGuard<T> = [T] extends [never]
+  ? []
+  : T extends { readonly [__result__]: true }
+    ? ["A Result cannot be nested inside another Result"]
+    : [];
+
+/**
+ * Rest-parameter guard for `safeTry`: a required element when the returned value is a
+ * Result whose own value is a Result. A Result may be returned; a Result inside it may not.
+ */
+export type NestedValueGuard<T> = [T] extends [never]
+  ? []
+  : T extends Result<infer Value, infer _Error>
+    ? [Value] extends [never]
+      ? []
+      : Value extends { readonly [__result__]: true }
+        ? ["A Result's value cannot be another Result"]
+        : []
+    : [];
 
 /** Methods available on a Result */
 export interface ResultMethods<T> {
@@ -46,29 +74,28 @@ export interface ResultMethods<T> {
   };
   /**
    * Transforms the inner value if `Ok`, returns same `Err` if `Err`.
+   * - If fn returns a Result, it is returned as is; it is never wrapped again.
    * - If fn returns `undefined`, returns original Result (no new allocation).
    * - If fn throws, returns `Err(message)`.
    * - Supports async functions, returning `Promise<Result<U, string>>`.
    * @example
    * Ok(5).andThen(x => x * 2);             // Ok(10)
+   * Ok(5).andThen(x => Ok(x * 2));         // Ok(10) - a returned Result is flattened
    * Err("fail").andThen(x => x * 2);       // Err("fail")
    * Ok(5).andThen(x => undefined);         // Ok(5) - original
    * await Ok(5).andThen(async x => x);     // Ok(5)
    */
-  andThen<U>(fn: (value: T) => U | Promise<U>): Result<U, string> | Promise<Result<U, string>>;
+  andThen<U>(
+    fn: (value: T) => U | Result<U, string> | Promise<U | Result<U, string>>
+  ): Result<U, string> | Promise<Result<U, string>>;
 }
 
 /**
- * Creates a new, successful result.
- * @param value Value of the result
- * @param message Optional description of the success; omitted values leave no `message` property
- * @example
- * const a = Ok("hello");
- * typeof a; // Ok<"hello">
- * const b = Ok({ id: 1 }, "Project created");
- * b.message; // "Project created"
+ * @internal Builds an Ok without the compile-time nesting guard, for a value already
+ * known to be plain. Refuses a Result at runtime, so no builder can nest one.
  */
-export function Ok<T>(value: T, message?: string): Ok<T> & ResultMethods<T> {
+export function buildOk<T>(value: T, message?: string): Ok<T> & ResultMethods<T> {
+  if (isResult(value)) panicNestedResult();
   const ok = Object.freeze({
     type: "Ok",
     value,
@@ -78,30 +105,30 @@ export function Ok<T>(value: T, message?: string): Ok<T> & ResultMethods<T> {
   } as Ok<T>);
 
   const andThen = <U>(
-    fn: (value: T) => U | Promise<U>,
+    fn: (value: T) => U | Result<U, string> | Promise<U | Result<U, string>>,
   ): Result<U, string> | Promise<Result<U, string>> => {
+    // A returned Result is passed through, never wrapped again.
+    const settle = (value: U | Result<U, string> | undefined): Result<U, string> => {
+      if (value === undefined) return withMethods as unknown as Result<U, string>;
+      if (isResult(value)) {
+        if (isResult((value as { value?: unknown }).value)) panicNestedResult();
+        return value as Result<U, string>;
+      }
+      return buildOk(value) as Result<U, string>;
+    };
+
     try {
       const result = fn((ok as Ok<T>).value);
 
-      // Handle async
       if (result instanceof Promise) {
         return result
-          .then((resolved) => {
-            if (resolved === undefined) return withMethods as unknown as Result<U, string>;
-            return Ok(resolved) as Result<U, string>;
-          })
-          .catch((error) => {
-            const message = error instanceof Error ? error.message : String(error);
-            return Err(message) as Result<U, string>;
-          });
+          .then((resolved) => settle(resolved as U | Result<U, string>))
+          .catch((error) => Err(describeThrown(error)) as Result<U, string>);
       }
 
-      // Sync: undefined means return original
-      if (result === undefined) return withMethods as unknown as Result<U, string>;
-      return Ok(result) as Result<U, string>;
+      return settle(result as U | Result<U, string>);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return Err(message) as Result<U, string>;
+      return Err(describeThrown(error)) as Result<U, string>;
     }
   };
 
@@ -127,13 +154,32 @@ export function Ok<T>(value: T, message?: string): Ok<T> & ResultMethods<T> {
 }
 
 /**
+ * Creates a new, successful result.
+ * @param value Value of the result. A Result is rejected; a Result never nests inside another Result.
+ * @param message Optional description of the success; omitted values leave no `message` property
+ * @example
+ * const a = Ok("hello");
+ * typeof a; // Ok<"hello">
+ * const b = Ok({ id: 1 }, "Project created");
+ * b.message; // "Project created"
+ */
+export function Ok<T>(
+  value: T,
+  message?: string,
+  ..._noNestedResult: NestedResultGuard<T>
+): Ok<T> & ResultMethods<T> {
+  return buildOk(value, message);
+}
+
+/**
  * Creates a new, failed result with a string error message.
  * @param error Error message (must be a string)
+ * @param raw Optional underlying cause, kept as given and non-enumerable on `.raw`
  * @example
  * const a = Err("something went wrong");
  * typeof a; // Err<string>
  */
-export function Err(error: string): Err<string> & ResultMethods<never> {
+export function Err(error: string, raw?: unknown): Err<string> & ResultMethods<never> {
   const err = Object.freeze({
     type: "Err",
     error,
@@ -143,7 +189,7 @@ export function Err(error: string): Err<string> & ResultMethods<never> {
 
   // Err.andThen skips fn, returns same instance
   const andThen = <U>(
-    _fn: (value: never) => U | Promise<U>,
+    _fn: (value: never) => U | Result<U, string> | Promise<U | Result<U, string>>,
   ): Result<U, string> | Promise<Result<U, string>> => {
     return withMethods as unknown as Result<U, string>;
   };
@@ -173,5 +219,22 @@ export function Err(error: string): Err<string> & ResultMethods<never> {
     andThen,
   };
 
-  return withMethods as Err<string> & ResultMethods<never>;
+  return attachRaw(withMethods, raw) as Err<string> & ResultMethods<never>;
+}
+
+/**
+ * Attaches a non-enumerable diagnostic payload to a Result.
+ * The payload never appears in `JSON.stringify`, spread, or `Object.keys`, so a raw
+ * cause can travel beside a safe message without reaching the wire.
+ * @internal
+ */
+export function attachRaw<R extends object>(result: R, raw: unknown): R {
+  if (raw === undefined) return result;
+  Object.defineProperty(result, "raw", {
+    value: raw,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+  return result;
 }

@@ -1,4 +1,4 @@
-import { Err, Ok, type Result, type ResultMethods } from "./result";
+import { Err, buildOk, type Result, type ResultMethods } from "./result";
 import { isFalsy } from "./option";
 
 /**
@@ -69,7 +69,7 @@ export function Options<T extends readonly unknown[]>(
 ): Result<OptionsValue<T[number]>, string> {
   for (const value of values) {
     if (isSkip(value)) continue;
-    return Ok(unwrapInner(value) as OptionsValue<T[number]>);
+    return buildOk(unwrapInner(value) as OptionsValue<T[number]>);
   }
   return fallback;
 }

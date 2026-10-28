@@ -88,7 +88,7 @@ describe("safeTry", () => {
 
       expect(result.isErr).toBe(true);
       if (result.isErr) {
-        expect(result.error).toBe("[object Object]");
+        expect(result.error).toBe('{"custom":"object"}');
       }
     });
   });

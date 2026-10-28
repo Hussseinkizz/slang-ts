@@ -1,6 +1,6 @@
 import { Ok, Err } from "./result";
 import type { Result } from "./result";
-import { evaluateValue, isResult } from "./internals";
+import { evaluateValue, isResult, describeThrown, panicNestedResult, isNestedResultPanic } from "./internals";
 
 /** Function that transforms one Result into another */
 export type PipeFn<T = any, E = any> = (
@@ -61,9 +61,11 @@ async function executePipeFn(
     if (!isResult(result)) {
       return Err("Pipeline function must return a Result");
     }
+    if (isResult((result as { value?: unknown }).value)) panicNestedResult();
     return result;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (isNestedResultPanic(error)) throw error;
+    const errorMessage = describeThrown(error);
     return Err(errorMessage);
   }
 }

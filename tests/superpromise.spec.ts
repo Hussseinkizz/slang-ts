@@ -28,13 +28,13 @@ describe("superPromise — construction and final state", () => {
     if (result.isErr) expect(result.error).toBe("boom");
   });
 
-  it("normalizes non-Error throws to Err(String(value))", async () => {
+  it("normalizes a non-Error throw to its JSON text", async () => {
     const result = await superPromise(() => {
       throw { custom: "thing" };
     });
 
     expect(result.isErr).toBe(true);
-    if (result.isErr) expect(result.error).toBe("[object Object]");
+    if (result.isErr) expect(result.error).toBe('{"custom":"thing"}');
   });
 
   it("normalizes async rejections", async () => {

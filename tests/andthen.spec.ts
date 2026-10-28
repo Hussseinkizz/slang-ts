@@ -192,4 +192,30 @@ describe("andThen", () => {
       expect(result.description).toBe("HELLO!");
     });
   });
+
+  describe("Result.andThen returning a Result", () => {
+    it("returns a returned Ok as is, never wrapped again", () => {
+      const result = Ok(5).andThen((x) => Ok(x * 2)) as any;
+      expect(result.isOk).toBe(true);
+      expect(result.value).toBe(10);
+    });
+
+    it("returns a returned Err as is", () => {
+      const result = Ok(5).andThen(() => Err("nope")) as any;
+      expect(result.isErr).toBe(true);
+      expect(result.error).toBe("nope");
+    });
+
+    it("flattens a returned Result from an async fn", async () => {
+      const result = (await Ok(5).andThen(async (x) => Ok(x + 1))) as any;
+      expect(result.isOk).toBe(true);
+      expect(result.value).toBe(6);
+    });
+
+    it("still transforms when fn returns a plain value", () => {
+      const result = Ok(5).andThen((x) => x * 2) as any;
+      expect(result.isOk).toBe(true);
+      expect(result.value).toBe(10);
+    });
+  });
 });

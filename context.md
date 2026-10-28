@@ -78,3 +78,75 @@ Changed files for this step: `package.json`, `README.md`, and `context.md`. All 
 **Author:** Codex
 
 *This context reflects the current migration and is updated as verification completes.*
+
+## 9. Non-Error throw normalization (describeThrown)
+
+`safeTry`, `superPromise`, `pipe` and `atom.andThen` each converted a thrown value with
+`e instanceof Error ? e.message : String(e)`, so a thrown plain object (fetch wrappers and some
+drivers do this) became `"[object Object]"`, which tells a reader nothing. Every downstream project
+wrote its own repair helper for this.
+
+A single internal `describeThrown` in `src/internals.ts` now resolves the common shapes (an Error's
+message, a string, a bigint, an object's `message`/`error`/`reason` field) and falls back to a
+guarded, length-bounded `JSON.stringify` that handles cycles. `evaluateValue` uses it too, so a
+non-string `Result` error no longer renders as `"[object Object]"`.
+
+Behaviour change: only a non-Error throw changes text, and only for the better. The two assertions
+that pinned `"[object Object]"` moved to the JSON text. The Error and string branches are unchanged,
+so every existing message and every other test stays exactly as it was.
+
+Changed files: `src/internals.ts`, `src/safe-try.ts`, `src/result.ts`, `src/pipe.ts`,
+`src/super-promise.ts`, `src/atom.ts`, `tests/safetry.spec.ts`, `tests/superpromise.spec.ts`. New
+files: `tests/describe-thrown.spec.ts` and `intent.md`. Pre-change copies are in
+`backup/describe-thrown-2026-10-27/`. Verification: 364 tests across 17 files pass, typecheck clean.
+Version and publication are untouched.
+
+## 10. Result raw payloads and safeTry collection
+
+`Err(error, raw?)` takes an optional cause, mirroring `Ok(value, message?)`. The cause rides on the
+returned Result as a non-enumerable `raw` property, kept exactly as given and never normalized: it
+stays out of `JSON.stringify`, spread and `Object.keys`, so it can carry a driver error or an HTTP
+body beside a safe message without reaching the wire. `Err`'s type gained `readonly raw?: unknown`.
+The property is defined on the final returned object, not the frozen base, because a non-enumerable
+property does not survive the `{ ...base }` spread and a frozen object rejects a later
+`defineProperty`. An internal `attachRaw` in `src/result.ts` does it and is not re-exported by
+`src/index.ts`.
+
+`safeTry` passes a caught throw to `Err(message, error)`, so a normal call carries the thrown value
+itself on `.raw`, and a nested failure propagates the inner `Err`'s own `.raw`. In every failure,
+`error` is the message and `raw` is the raw object. With `{ collectValues: true }`, the returned
+Result instead carries `raw = { errors, values }`, every unwrapped layer and every failure in order,
+each raw and never a humanized message; the terminal `value` is unchanged, so the return type does
+not move. A plain `Ok` carries no `raw`, because on that path the raw payload is `.value`. The flag
+defaults to `false` and leaves `raw` undefined.
+
+Verification: `tests/raw-and-collect.spec.ts` adds 12 tests; the suite is 376 tests across 18 files
+with a clean typecheck. Version and publication untouched.
+
+## 11. No nested Results
+
+A Result never nests inside another Result where the input is explicit. `Ok` rejects a Result value
+with a shared `NestedResultGuard<T>` trailing rest parameter, which leaves inference untouched. An
+intersection form (`value: T & NoNestedResult<T>`) was tried first and narrowed literal inference,
+breaking `.unwrap().else(0)` in the suite, so it was replaced. `Err`'s error is a string, so it
+cannot nest.
+
+`Result.andThen` is deliberately exempt: it is a pipeline step we control, so a returned Result is
+flattened and passed through, never wrapped again (`Ok(5).andThen(x => Ok(x * 2))` gives `Ok(10)`).
+Its fn type is `(value: T) => U | Result<U, string> | Promise<U | Result<U, string>>`.
+
+`buildOk` (internal, not re-exported) builds an `Ok` without the compile-time guard and refuses a
+Result at runtime by throwing, so the explicit-input builders (`Ok`, `Options`, `SuperPromise`
+`resolve`) cannot nest one.
+
+`safeTry`'s fn may return a Result, but not one whose value is another Result: a `NestedValueGuard`
+rest parameter rejects that at the type level. At runtime it panics (throws) on a second Result,
+because an untyped value from `any`, JSON or plain JS can still carry one. It returns the last
+unwrapped value for allowed chains, and `collectValues` records the intermediates.
+
+The invariant across the library: no utility returns a `Result<Result>`. `andThen` and `pipe` pass a
+returned Result through and panic if its own value is a Result; `buildOk` panics on a Result, which
+covers `Ok`, `Options`, `SuperPromise` and `to`; `safeTry` panics on a nested one. The panic is one
+message, "A Result cannot be nested inside another Result".
+
+Verification: 383 tests across 18 files, typecheck clean. Version and publication untouched.

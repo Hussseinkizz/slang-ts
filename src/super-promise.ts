@@ -1,7 +1,7 @@
-import { Ok, Err } from "./result";
+import { Ok, Err, buildOk } from "./result";
 import type { Result } from "./result";
 import { createSignal } from "./signal";
-import { evaluateValue, ACTIVATE_HOOK } from "./internals";
+import { evaluateValue, ACTIVATE_HOOK, describeThrown } from "./internals";
 import type { Activatable } from "./internals";
 
 /** The operation itself. Receives the attempt's AbortSignal. */
@@ -56,8 +56,7 @@ export type SuperPromise<T> = {
   finally(onfinally?: (() => void) | null): Promise<Result<T, string>>;
 };
 
-const normalizeError = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+const normalizeError = (error: unknown): string => describeThrown(error);
 
 /** Propagates parent abort to a child controller; returns an unlink function. */
 const linkAbort = (parent: AbortSignal, child: AbortController): (() => void) => {
@@ -223,7 +222,7 @@ export function superPromise<T>(
         const outcome = await runAttempt(executor, attempt, stop);
         switch (outcome.kind) {
           case "value":
-            return finalize(Ok(outcome.value));
+            return finalize(buildOk(outcome.value));
           case "aborted":
             return finalize(Err("Aborted"));
           case "stopped":
@@ -248,7 +247,7 @@ export function superPromise<T>(
         const outcome = await runAttempt(executor, attempt, undefined);
         switch (outcome.kind) {
           case "value":
-            return finalize(Ok(outcome.value));
+            return finalize(buildOk(outcome.value));
           case "aborted":
             return finalize(Err("Aborted"));
           case "timedOut":
@@ -271,7 +270,7 @@ export function superPromise<T>(
     const outcome = await runAttempt(executor, attempt, undefined);
     switch (outcome.kind) {
       case "value":
-        return finalize(Ok(outcome.value));
+        return finalize(buildOk(outcome.value));
       case "aborted":
         return finalize(Err("Aborted"));
       case "timedOut":
@@ -300,7 +299,7 @@ export function superPromise<T>(
   const task: SuperPromise<T> = {
     done,
     abort,
-    resolve: (value: T): void => finalize(Ok(value)),
+    resolve: (value: T): void => finalize(buildOk(value)),
     reject: (error: unknown): void => finalize(Err(normalizeError(error))),
     tap: (fn: (value: T) => unknown | Promise<unknown>): SuperPromise<T> =>
       superPromise<T>(async (): Promise<Result<T, string>> => {

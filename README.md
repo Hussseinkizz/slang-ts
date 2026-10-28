@@ -45,7 +45,7 @@ All utilities fully tested. See [tests](https://github.com/Hussseinkizz/slang/tr
 
 ## New in v0.0.9
 
-- **SafeTry**: unwraps nested Result, Option, and Atom values into one result; nested failures now become the outer `Err`, while plain object properties and array elements stay unchanged.
+- **SafeTry**: unwraps Option and Atom values into one result; a Result never nests inside another Result, and plain object properties and array elements stay unchanged.
 - **Package types**: bundled declarations work with strict NodeNext consumers, so importing the package no longer exposes invalid declaration paths.
 - **Build tooling**: tsdown and TypeScript 7 build JavaScript and bundled types together.
 
@@ -179,7 +179,7 @@ println("Retries:", retries);
 
 ### andThen
 
-Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. Returns original instance if provided transformation function returns `undefined`.
+Chainable transformation for `Option`, `Result`, and `Atom`. Transforms the inner value while preserving the wrapper type. For `Result`, a returned `Result` is passed through as it is, never wrapped again (`Ok(5).andThen(x => Ok(x * 2))` is `Ok(10)`); a returned Result whose own value is a Result panics. Returns original instance if provided transformation function returns `undefined`.
 
 ```ts
 // Option - transforms Some, skips None
@@ -302,20 +302,18 @@ Useful when values come from different functions with inconsistent return types 
 
 ### SafeTry
 
-Runs sync or async functions and captures failures as `Err<string>`. Always await it. Nested Result, Option, and Atom values resolve to one `Result`: `Ok` and `Some` unwrap until a plain value appears, `Err` stops with its error normalized through `String`, `None` becomes `Err("Option was None")`, and Atom becomes its description.
+Runs sync or async functions and captures failures as `Err<string>`. Always await it. Option and Atom values resolve to one `Result`: `Some` unwraps until a plain value appears, `None` becomes `Err("Option was None")`, and Atom becomes its description.
+
+A Result never nests inside another Result. `Ok(Ok(x))` and `Ok(Err(x))` do not compile, and `safeTry` panics if one arrives untyped.
 
 ```ts
-import { safeTry, Ok, Err, option, atom, println, type Result } from "slang-ts";
+import { safeTry, Ok, option, atom, println } from "slang-ts";
 
-// Inferred type is Promise<Result<number, string>>, not nested Results.
-const pending: Promise<Result<number, string>> = safeTry(() => Ok(Ok(42)));
-const nested = await pending; // Ok(42)
-if (nested.isOk) println(nested.value); // 42
+// Option and Atom layers unwrap; the terminal value is inferred, never nested.
+const unwrapped = await safeTry(() => Ok(option(42)));
+if (unwrapped.isOk) println(unwrapped.value); // 42
 
-const failed = await safeTry(() => Ok(Ok(Err("Not found")))); // Err("Not found")
-if (failed.isErr) println(failed.error); // "Not found"
-
-const mixed = await safeTry(() => Ok(option(Ok(atom("ready")))));
+const mixed = await safeTry(() => Ok(option(atom("ready"))));
 // Ok("ready"); inferred success value is the literal "ready".
 if (mixed.isOk) println(mixed.value); // "ready"
 
@@ -348,7 +346,7 @@ if (wrapped.isOk) println(wrapped.value === innerPromise); // true
 ```ts
 import { safeTry, Ok, Err, println } from "slang-ts";
 
-const returned = await safeTry(() => Ok(Err("Not found")), { throw: true });
+const returned = await safeTry(() => Err("Not found"), { throw: true });
 if (returned.isErr) println(returned.error); // "Not found"
 
 await safeTry(() => {

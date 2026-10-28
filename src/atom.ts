@@ -1,6 +1,7 @@
 import type { Option } from "./option";
 import type { Result } from "./result";
 import { panic } from "./panic";
+import { describeThrown } from "./internals";
 
 /** Unique symbol to brand atoms */
 declare const __atom__: unique symbol;
@@ -75,7 +76,7 @@ export function atom<const T extends string>(name: T): Atom<T> & AtomMethods<T> 
     try {
       result = fn(name);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = describeThrown(error);
       panic(`Atom.andThen: fn threw an error: ${message}`);
     }
 
