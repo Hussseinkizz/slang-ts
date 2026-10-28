@@ -72,7 +72,7 @@ Specific doc edits:
 
 ## 3. Version
 
-- npm latest is `0.1.1`; repo version is `0.2.0` (unpublished).
+- npm latest is `0.1.1`; repo version is `0.2.2` (unpublished).
 - 0.2.0 is not published, so the `.code` → `.category` rename is not a published API break.
 
 ## 4. Verification
