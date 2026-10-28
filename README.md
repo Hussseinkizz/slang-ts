@@ -6,7 +6,7 @@
 An opinionated functional programming library for TypeScript.
 
 A collection of utilities and mechanisms brought over from languages like Rust and Erlang. Each
-utility is deliberately selected and built from scratch with zero dependencies.
+utility is deliberately chosen and built from scratch with zero dependencies.
 
 ## Install
 
@@ -55,7 +55,7 @@ import { option, Ok, Err, atom, match } from "slang-ts";
 |---|---|
 | A value that may be missing | [Option][option] |
 | An operation that can fail | [Result][result] and [SafeTry][safe-try] |
-| Pattern matching over outcomes | [Match][match] |
+| Pattern matching over results | [Match][match] |
 | Timeout, retry, or cancellation | [SuperPromise][super-promise] |
 | Ordered, parallel, or race tasks | [SuperRunner][super-runner] |
 | A shared concurrency limit | [taskGroup][task-group] |
@@ -66,33 +66,46 @@ import { option, Ok, Err, atom, match } from "slang-ts";
 | Cached function calls | [memoized][memoized] |
 | Step history or undo | [createStepper][stepper] |
 | Publish/subscribe between parts of an app | [Channel][channel] |
-| A one-shot lifecycle trigger | [Signal][signal] |
+| A lifecycle trigger that fires once | [Signal][signal] |
 
 ## What's inside
 
 ### Error handling and flow
 
-[Option][option] (Some/None, `isFalsy`, expect, unwrap/else, andThen) ·
-[Result][result] (Ok/Err, expect, unwrap/else, andThen, raw cause) ·
-[SafeTry][safe-try] · [Match][match] (match, matchAll) ·
-[Options][options] · [Pipe][pipe]
+- [Option][option] (Some/None, `isFalsy`, expect, unwrap/else, andThen)
+- [Result][result] (Ok/Err, expect, unwrap/else, andThen, raw cause)
+- [SafeTry][safe-try]
+- [Match][match] (match, matchAll)
+- [Options][options]
+- [Pipe][pipe]
 
 ### Composition and conversion
 
-[Atom][atom] · [To][to] (`.to()` converters) · [Zip][zip] (zip, zipWith, unzip)
+- [Atom][atom]
+- [To][to] (`.to()` converters)
+- [Zip][zip] (zip, zipWith, unzip)
 
 ### Collections and data
 
-[list][list] · [struct][struct] · [sets][sets] · [Ok.iterate][iterate] · [memoized][memoized]
+- [list][list]
+- [struct][struct]
+- [sets][sets]
+- [Ok.iterate][iterate]
+- [memoized][memoized]
 
 ### Async and lifecycle
 
-[SuperPromise][super-promise] · [SuperRunner][super-runner] · [taskGroup][task-group] ·
-[Signal][signal] · [Channel][channel]
+- [SuperPromise][super-promise]
+- [SuperRunner][super-runner]
+- [taskGroup][task-group]
+- [Signal][signal]
+- [Channel][channel]
 
 ### Small utilities
 
-[Panic][panic] · [println][logging] (with `setEnvironment`) · [createStepper][stepper]
+- [Panic][panic]
+- [println][logging] (with `setEnvironment`)
+- [createStepper][stepper]
 
 Full reference: [docs index][docs-index]. Feature list: [CHANGELOG.md][changelog].
 
@@ -100,8 +113,8 @@ Full reference: [docs index][docs-index]. Feature list: [CHANGELOG.md][changelog
 
 ### Load a value that can fail: SafeTry + Result
 
-Your boundary probably mixes failures: a lookup that throws, a parser that rejects a value, an
-optional result. `safeTry` brings all of that into one `Result`:
+The edge of your app probably mixes failures: a lookup that throws, a parser that rejects a value,
+an optional result. `safeTry` brings all of that into one `Result`:
 
 ```ts
 import { Err, Ok, safeTry, type Result, println } from "slang-ts";
@@ -154,9 +167,8 @@ Full detail: [SafeTry][safe-try] and [Result][result].
 
 ### Call an API with a timeout and retries: SuperPromise
 
-Your executor gets an `AbortSignal`. `timeout` aborts an attempt, `retry` runs it again after an
-ordinary failure, and the whole thing settles into `Ok` or `Err` — so no `try`/`catch` around the
-await.
+Your function gets an `AbortSignal`. `timeout` aborts an attempt, `retry` runs it again after an
+ordinary failure, and you get back `Ok` or `Err` — so no `try`/`catch` around the await.
 
 ```ts
 import { superPromise, println } from "slang-ts";
@@ -220,7 +232,7 @@ Full detail: [list][list] and [struct][struct].
 
 ## Development
 
-Install with Bun, then run the release check:
+Install with Bun, then run the full check:
 
 ```bash
 bun install
@@ -248,7 +260,7 @@ Contributions are welcome.
 
 ## License
 
-MIT License. See [LICENSE][license] for the full text.
+MIT License. See [LICENSE][license].
 
 [option]: https://github.com/Hussseinkizz/slang/blob/main/docs/option.md
 [result]: https://github.com/Hussseinkizz/slang/blob/main/docs/result.md

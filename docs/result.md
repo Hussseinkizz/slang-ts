@@ -73,8 +73,8 @@ if (user.isOk) {
 }
 ```
 
-At a bigger boundary, [SafeTry](safe-try.md) can replace that `try`/`catch` and unwrap `Option` and
-`Atom` values too.
+For a larger operation, [SafeTry](safe-try.md) can replace that `try`/`catch` and unwrap `Option`
+and `Atom` values too.
 
 ### Expect and unwrap
 

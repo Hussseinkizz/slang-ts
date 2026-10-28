@@ -18,7 +18,7 @@ atom("ready").to("result");    // Ok("ready")
 
 - A function wants an `Atom`, but you have a string `Option`.
 - A caller wants a `Result`, and all you have is an optional value.
-- You're crossing a boundary between modules that use different Slang wrappers.
+- You're moving between modules that use different Slang wrappers.
 
 Don't use conversions to hide a failure. `None` becomes `Err("Value is None")`; it doesn't invent a
 value.

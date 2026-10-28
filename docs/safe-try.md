@@ -5,9 +5,8 @@ wrappers into one `Result` too.
 
 ## What it is
 
-Use `safeTry` at a boundary where several things can fail: a fetch, a parser, a database call, an
-optional lookup. Instead of scattering `try`/`catch` and null checks, you get one `Result` back to
-inspect.
+Use `safeTry` where several things can fail: a fetch, a parser, a database call, an optional
+lookup. Instead of scattering `try`/`catch` and null checks, you get one `Result` back to inspect.
 
 It's most useful when failures arrive in different shapes: a thrown error, a `Result`, an `Option`,
 or an `Atom`.
@@ -19,11 +18,11 @@ or an `Atom`.
 - You're calling async code and don't want its errors to escape as rejections.
 
 If you just have one `Result`-returning function, plain `Result` is enough. `safeTry` earns its
-place at the boundary where several shapes meet.
+place where several shapes meet.
 
 ## How to use it
 
-It's easiest to see the boundary next to the code it replaces. A lookup can throw; a parser can
+It's easiest to see the difference next to the code it replaces. A lookup can throw; a parser can
 reject a value. `safeTry` brings both into one `Result`:
 
 ```ts
@@ -81,7 +80,7 @@ branch.
 ```ts
 import { safeTry, Ok, option, atom, println } from "slang-ts";
 
-// Option and Atom layers unwrap; the terminal value is inferred, never nested.
+// Option and Atom layers unwrap; the final value is inferred, never nested.
 const unwrapped = await safeTry(() => Ok(option(42)));
 if (unwrapped.isOk) println(unwrapped.value); // 42
 
@@ -102,7 +101,7 @@ Always await it. You get a promise even when the callback is synchronous.
 
 ### What unwraps and what stays
 
-Only the returned wrapper chain unwraps. Plain object properties and array elements stay as you
+Only the wrappers you return get unwrapped. Plain object properties and array elements stay as you
 supplied them. Only the callback's return is awaited; a Promise inside `Ok` or `Some` stays a
 Promise.
 
@@ -122,8 +121,8 @@ if (wrapped.isOk) println(wrapped.value === innerPromise); // true
 ### Throwing instead of returning
 
 `{ throw: true }` rethrows errors caught while running the callback or reading the wrappers it
-returns. A returned `Err` still comes back normally. A circular wrapper chain returns
-`Err("Cannot resolve a circular value")`, even with `{ throw: true }`.
+returns. A returned `Err` still comes back normally. If the wrappers point back to each other, you
+get `Err("Cannot resolve a circular value")`, even with `{ throw: true }`.
 
 ```ts
 import { safeTry, Ok, Err, println } from "slang-ts";

@@ -43,7 +43,7 @@ println(computations);   // 1
 ### Async functions
 
 For an async function, the Promise is the cached value, so concurrent calls with the same arguments
-wait on the same call. `memoized` keeps the Promise and the eviction together:
+wait on the same call. `memoized` stores the Promise and removes it if the call fails:
 
 ```ts
 let requests = 0;
@@ -138,10 +138,10 @@ println(runs); // 2
 - `undefined` is a valid cached result. The cache checks for the leaf explicitly, so it isn't
   mistaken for a miss.
 - A synchronous throw isn't cached. The error reaches the caller, and the next call runs `fn` again.
-- A rejected Promise is evicted, so a later call can retry. The first caller still gets the
-  rejection.
-- The cache has no size limit, TTL, or LRU eviction. It strongly holds argument keys and results
-  until `clear()`.
+- A rejected Promise is removed from the cache, so a later call can retry. The first caller still
+  gets the rejection.
+- The cache has no size limit and no expiry, and it never removes old entries on its own. It keeps
+  argument keys and results until `clear()`.
 - Mutating an object argument doesn't create a new entry because its identity is unchanged.
 - Mutating a cached object result affects everyone who receives it.
 - Don't memoize a function with side effects, or one whose result depends on state outside its

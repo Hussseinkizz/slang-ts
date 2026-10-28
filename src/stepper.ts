@@ -11,7 +11,7 @@ export type StepFn<T> = (
   previous: Step<T> | undefined,
   make: StepFactory<T>,
 ) => Step<T> | Promise<Step<T>>;
-/** Reconstructs an evicted step from its nearest retained neighbors. */
+/** Reconstructs a dropped step from its nearest stored neighbors. */
 export type PrevRecover<T> = (
   previous: Step<T> | undefined,
   make: StepFactory<T>,
@@ -105,7 +105,7 @@ export function createStepper<T>(config: StepperConfig = {}): Stepper<T> {
     throw new Error("maxSteps must be a nonnegative integer or null");
   }
 
-  /** Retained values by logical position; evicted positions simply have no entry. */
+  /** Stored values by logical position; dropped positions simply have no entry. */
   const history = new Map<number, Step<T>>();
   let position = -1;
   let generated = 0;

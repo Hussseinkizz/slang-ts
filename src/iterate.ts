@@ -1,18 +1,18 @@
 import { Err } from "./result";
 import type { Result } from "./result";
 import { createFallible, fail, succeed } from "./fallible";
-import type { Fallible, SlangErrorCode } from "./fallible";
+import type { Fallible, SlangErrorCategory } from "./fallible";
 import { describeThrown } from "./internals";
 
 type Producer<E> = () => Iterator<E>;
-type Failure = { code: SlangErrorCode; message: string } | undefined;
+type Failure = { category: SlangErrorCategory; message: string } | undefined;
 type Shared = { consumed: boolean };
 
 /** The element produced when iterating `C`. */
 type ElementOf<C> = C extends Iterable<infer E> ? E : never;
 
 /**
- * Lazily transforms a successful Result's collection. Terminals resolve with
+ * Lazily transforms a successful Result's collection. Finishing methods resolve with
  * `.else`/`.panic`. The type parameter is the collection, so `Ok(users)` gives
  * `IterateChain<User[]>` and its callbacks receive a `User`.
  */
@@ -30,8 +30,8 @@ export type IterateChain<out C> = {
 
 const iterable = <E>(produce: Producer<E>): Iterable<E> => ({ [Symbol.iterator]: produce });
 
-const failed = <T>(failure: { code: SlangErrorCode; message: string }): Fallible<T> =>
-  createFallible(Err(failure.message) as unknown as Result<T, string>, failure.code);
+const failed = <T>(failure: { category: SlangErrorCategory; message: string }): Fallible<T> =>
+  createFallible(Err(failure.message) as unknown as Result<T, string>, failure.category);
 
 /** Builds a lazy chain over a producer. @internal */
 function createIterate<C>(
@@ -89,7 +89,7 @@ function createIterate<C>(
     take(n) {
       if (!Number.isSafeInteger(n) || n < 0) {
         return wrap<C>(function* () {}, {
-          code: "INVALID_INDEX",
+          category: "INVALID_INDEX",
           message: "take needs a nonnegative integer",
         });
       }
@@ -112,7 +112,7 @@ function createIterate<C>(
     drop(n) {
       if (!Number.isSafeInteger(n) || n < 0) {
         return wrap<C>(function* () {}, {
-          code: "INVALID_INDEX",
+          category: "INVALID_INDEX",
           message: "drop needs a nonnegative integer",
         });
       }
@@ -130,7 +130,7 @@ function createIterate<C>(
     chunk(size) {
       if (!Number.isSafeInteger(size) || size <= 0) {
         return wrap<ElementOf<C>[][]>(function* () {}, {
-          code: "INVALID_CHUNK_SIZE",
+          category: "INVALID_CHUNK_SIZE",
           message: "chunk size must be a positive integer",
         });
       }
@@ -201,6 +201,6 @@ export function iterateOf<C>(value: unknown): IterateChain<C> {
     () => {
       throw new Error("Cannot iterate a non-iterable value");
     },
-    { code: "INVALID_INPUT", message: "Cannot iterate a non-iterable value" },
+    { category: "INVALID_INPUT", message: "Cannot iterate a non-iterable value" },
   );
 }

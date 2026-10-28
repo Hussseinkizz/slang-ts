@@ -1,20 +1,20 @@
 # taskGroup
 
-A task group shares a concurrency limit and start spacing across tasks and runners.
+A task group sets a shared concurrency limit and spaces out starts across tasks and runners.
 
 ## What it is
 
-A `taskGroup` is a scheduler. It caps how many tasks run at once, can space out their starts, and
-shares that budget with every task that references the same group.
+A `taskGroup` controls how many tasks run at once and how far apart they start. Every task that
+references the same group shares that limit.
 
-It manages execution, not business idempotency. It won't deduplicate work, retry for you, or cancel
-a running task to make room.
+It manages execution, not whether your work runs twice. It won't deduplicate work, retry for you,
+or cancel a running task to make room.
 
 ## When to use it
 
-- Several `SuperPromise`s hit the same upstream and shouldn't all start at once.
+- Several `SuperPromise`s call the same service and shouldn't all start at once.
 - You need to spread starts over time so you don't send a burst.
-- Different runners should share one concurrency budget.
+- Different runners should share one concurrency limit.
 
 If one task needs a timeout or retry, configure that task. Use the group for the shared limit.
 
@@ -25,7 +25,7 @@ A group holds the concurrency and spacing policy for every task that references 
 ```ts
 import { superPromise, taskGroup, superRunner } from "slang-ts";
 
-const api = taskGroup("upstream-api", { concurrency: 3, throttle: 200 });
+const api = taskGroup("user-api", { concurrency: 3, throttle: 200 });
 
 const runner = superRunner({
   type: "all",
@@ -85,7 +85,7 @@ const second = superRunner({
 await Promise.all([first.start(), second.start()]);
 ```
 
-### Manual admission
+### Use a group directly
 
 You can also use a group without `SuperPromise`:
 
@@ -103,22 +103,21 @@ try {
 | Option | Default | What it does |
 |---|---|---|
 | `concurrency` | unlimited | How many tasks can be active at once. Must be a positive integer. |
-| `throttle` | `0` | Minimum milliseconds between admitted starts. Must be a nonnegative integer. |
+| `throttle` | `0` | Minimum milliseconds between starts. Must be a nonnegative integer. |
 
 The group's `name` is just a label for debugging. Identity is the object itself, not the name.
 
 ## Notes
 
 - `throttle` only spaces starts. It never cancels a running task.
-- A retry is a new admission, so a retried `SuperPromise` goes back through the group's queue.
-- A task waiting for admission hasn't started, so its timeout hasn't started either. The timeout
-  applies once the attempt is admitted.
+- A retry needs a new slot, so a retried `SuperPromise` goes back through the group's queue.
+- A task waiting for a slot hasn't started, so its timeout hasn't started either. The timeout
+  applies once the task gets a slot.
 - `acquire()` resolves with a release callback. Call it when the work is done. Releasing twice is
   safe, but the first release is the one that frees the slot.
-- Concurrency is shared by object identity, so two groups with the same name are separate budgets.
-- There's no debounce. Pending tasks aren't merged or superseded.
-- Queued work has no cancellation API of its own. Awaiting admission still resolves when a slot
-  frees.
+- Concurrency is shared by object identity, so two groups with the same name are separate limits.
+- There's no debounce. Pending tasks aren't merged or replaced.
+- Queued work has no cancellation API of its own. Waiting for a slot still resolves when one frees.
 
 ## See also
 

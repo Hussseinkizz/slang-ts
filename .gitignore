@@ -39,4 +39,10 @@ backup
 trash
 #demo
 AGENTS.md
+context.md
+intent.md
+plan.md
+safe-try-plan.md
+slang-utilities-decisions.md
+slang-utilities-spec.md
 pnpm-lock.yaml

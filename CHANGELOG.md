@@ -17,21 +17,21 @@ Everything notable in `slang-ts`, grouped by area. No release diary — just wha
 - `sets`: membership and set algebra for arrays, iterables, Maps (keys), and object keys.
 - `Ok.iterate`: lazy `map`, `filter`, `flatMap`, `take`, `drop`, `chunk`, `reduce`, `count`, and
   `toArray` on a successful `Result`.
-- `memoized`: argument-based caching with identity semantics for objects and rejected-Promise
-  eviction.
+- `memoized`: argument-based caching that matches objects by identity, and removal of rejected
+  Promises.
 
 ## Async and lifecycle
 
 - `SuperPromise`: promises with wait, retry, timeout, cancel, and `Ok`/`Err` settlement.
-- `SuperRunner`: sequence, parallel, and race orchestration for `SuperPromise`s.
-- `taskGroup`: shared concurrency and start spacing for `SuperPromise`s, with retries reacquiring
-  admission.
-- `Signal`: a one-shot trigger that fires once and stays fired.
+- `SuperRunner`: run `SuperPromise`s in sequence, in parallel, or as a race.
+- `taskGroup`: shared concurrency and start spacing for `SuperPromise`s, with retries waiting for
+  a new slot.
+- `Signal`: a trigger that fires once and stays fired.
 - `Channel`: an in-process publish/subscribe bus.
 
 ## Small utilities
 
-- `createStepper`: bounded keyed step history with backward recovery and explicit `prev` resolution.
+- `createStepper`: bounded step history with named steps, undo, and explicit `prev` handling.
 - `println` respects the environment: `setEnvironment("production")` turns it into a no-op, and
   `{ printFn }` routes output through an existing logger.
 

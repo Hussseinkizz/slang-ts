@@ -23,11 +23,11 @@ type RaceValues<
   ? { [K in keyof R]: { [P in K]: R[K] extends SuperPromise<infer T> ? T : never } }[keyof R]
   : Partial<NamedValues<R>>;
 
-/** Orchestrates multiple already-created SuperPromises. */
+/** Manages several already-created SuperPromise instances. */
 export type SuperRunner<Value> = {
-  /** Lifecycle signal: fires once when the runner reaches a terminal state. */
+  /** Fires once when the runner finishes. */
   done: AbortSignal;
-  /** Starts execution. Idempotent: repeated calls return the same result without re-executing children. */
+  /** Starts execution once; later calls return the same result without re-running children. */
   start(): Promise<Result<Value, string>>;
   /** Cancels the runner and all active children; settles with `Err("Aborted")`. */
   abort(): void;

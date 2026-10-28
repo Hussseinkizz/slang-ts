@@ -18,8 +18,7 @@ The returned `ListChain<T>` is also a `Fallible<readonly T[]>`. You finish it wi
 
 - `else(fallback)`: returns the value, or the fallback. A function fallback receives the error.
 - `panic(message?)`: returns the value, or throws. The message defaults to the failure message.
-- `outcome`: the underlying `Result<readonly T[], string>`.
-- `code`: the `SlangErrorCode` for a failure, or `undefined` on success.
+- `category`: the `SlangErrorCategory` for a failure, or `undefined` on success.
 
 Most operations return a new chain. `get` and `count` return a `Fallible` value. Your input array is
 never mutated.
@@ -116,22 +115,21 @@ By default, `prune` drops Slang-falsy values: `null`, `undefined`, `""`, `NaN`, 
 It keeps `0` and `false`. Pass a predicate if you'd rather choose yourself; it receives the value
 and the original index.
 
-### Failures and codes
+### Failures and categories
 
 ```ts
 const failed = list([1, 2, 3]).range(1, 99).take(1);
-println(failed.code);          // "OUT_OF_BOUNDS"
-println(failed.outcome.isErr); // true
-println(failed.else([]));      // []
+println(failed.category); // "OUT_OF_BOUNDS"
+println(failed.else([])); // []
 
 println(list([10, 20, 30]).take(2).panic()); // [10, 20]
 // list([10, 20, 30]).take(9).panic("Page is out of range"); // throws
 ```
 
-`range` fails first, so `take` never runs. The code from the first failure survives the rest of the
-chain, and `.code` is `undefined` on success.
+`range` fails first, so `take` never runs. The category from the first failure survives the rest of
+the chain, and `.category` is `undefined` on success.
 
-Here are the codes:
+Here are the categories:
 
 - `INVALID_INPUT`: you passed something other than an array or a successful `Ok` holding one.
 - `INVALID_INDEX`: an index, count, or range bound wasn't an integer.

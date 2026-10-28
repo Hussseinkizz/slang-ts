@@ -29,8 +29,8 @@ describe("list", () => {
 
   it("fails an out of bounds range with no clamping", () => {
     expect(list([10, 20, 30]).range(1, 99).else([])).toEqual([]);
-    expect(list([10, 20, 30]).range(1, 99).code).toBe("OUT_OF_BOUNDS");
-    expect(list([10, 20, 30]).range(2, 1).code).toBe("INVALID_RANGE");
+    expect(list([10, 20, 30]).range(1, 99).category).toBe("OUT_OF_BOUNDS");
+    expect(list([10, 20, 30]).range(2, 1).category).toBe("INVALID_RANGE");
   });
 
   it("panics on an invalid range", () => {
@@ -39,9 +39,9 @@ describe("list", () => {
 
   it("fails take and skip out of bounds", () => {
     expect(list([1, 2]).take(5).else([])).toEqual([]);
-    expect(list([1, 2]).take(5).code).toBe("OUT_OF_BOUNDS");
+    expect(list([1, 2]).take(5).category).toBe("OUT_OF_BOUNDS");
     expect(list([1, 2]).skip(-5).else([])).toEqual([]);
-    expect(list([1, 2]).skip(-5).code).toBe("OUT_OF_BOUNDS");
+    expect(list([1, 2]).skip(-5).category).toBe("OUT_OF_BOUNDS");
   });
 
   it("gets by index and normalizes negatives", () => {
@@ -51,7 +51,7 @@ describe("list", () => {
 
   it("uses the get fallback when out of bounds", () => {
     expect(list([10, 20, 30]).get(9, -1).else(-2)).toBe(-1);
-    expect(list([10, 20, 30]).get(9).code).toBe("OUT_OF_BOUNDS");
+    expect(list([10, 20, 30]).get(9).category).toBe("OUT_OF_BOUNDS");
   });
 
   it("distinguishes an explicit undefined fallback from no fallback", () => {
@@ -64,7 +64,7 @@ describe("list", () => {
   });
 
   it("fails an invalid chunk size", () => {
-    expect(list([1, 2]).chunk(0).code).toBe("INVALID_CHUNK_SIZE");
+    expect(list([1, 2]).chunk(0).category).toBe("INVALID_CHUNK_SIZE");
   });
 
   it("counts items", () => {
@@ -84,11 +84,11 @@ describe("list", () => {
   });
 
   it("rejects an Err at runtime", () => {
-    expect(list(Err("nope") as any).take(1).code).toBe("INVALID_INPUT");
+    expect(list(Err("nope") as any).take(1).category).toBe("INVALID_INPUT");
   });
 
   it("short-circuits after the first failure", () => {
-    expect(list([1, 2]).take(9).skip(1).code).toBe("OUT_OF_BOUNDS");
+    expect(list([1, 2]).take(9).skip(1).category).toBe("OUT_OF_BOUNDS");
   });
 
   it("treats a successful 0 or false as a value, not a fallback", () => {
@@ -101,11 +101,11 @@ describe("list", () => {
   });
 
   it("rejects non-integer indices and counts", () => {
-    expect(list([1, 2]).get(Number.NaN).code).toBe("INVALID_INDEX");
-    expect(list([1, 2]).get(1.5).code).toBe("INVALID_INDEX");
-    expect(list([1, 2]).take(Number.POSITIVE_INFINITY).code).toBe("INVALID_INDEX");
-    expect(list([1, 2]).skip(1.5).code).toBe("INVALID_INDEX");
-    expect(list([1, 2]).range(0, Number.NaN).code).toBe("INVALID_INDEX");
+    expect(list([1, 2]).get(Number.NaN).category).toBe("INVALID_INDEX");
+    expect(list([1, 2]).get(1.5).category).toBe("INVALID_INDEX");
+    expect(list([1, 2]).take(Number.POSITIVE_INFINITY).category).toBe("INVALID_INDEX");
+    expect(list([1, 2]).skip(1.5).category).toBe("INVALID_INDEX");
+    expect(list([1, 2]).range(0, Number.NaN).category).toBe("INVALID_INDEX");
   });
 
   it("handles empty lists without inventing values", () => {
@@ -113,11 +113,11 @@ describe("list", () => {
     expect(list([] as number[]).skip(0).else([1])).toEqual([]);
     expect(list([] as number[]).range(0, 0).else([1])).toEqual([]);
     expect(list([] as number[]).count().else(-1)).toBe(0);
-    expect(list([] as number[]).get(0).code).toBe("OUT_OF_BOUNDS");
+    expect(list([] as number[]).get(0).category).toBe("OUT_OF_BOUNDS");
   });
 
   it("rejects a successful Ok that does not hold an array", () => {
-    expect(list(Ok("not an array") as any).count().code).toBe("INVALID_INPUT");
+    expect(list(Ok("not an array") as any).count().category).toBe("INVALID_INPUT");
   });
 
   it("passes the original index to a prune predicate", () => {

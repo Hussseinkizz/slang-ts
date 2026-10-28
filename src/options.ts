@@ -45,11 +45,11 @@ export type OptionsValue<T> =
  * Returns the first usable value from a list as an `Ok`, or the fallback
  * `Err` if none is usable.
  *
- * Normalizes heterogeneous values — raw values, `Option`s, and `Result`s
+ * Normalizes mixed values — raw values, `Option`s, and `Result`s
  * from different sources — when all you care about is whether any of them
  * is usable. A value is usable when its unwrapped inner value is truthy;
  * `None`, `Err`, null, undefined, `""`, NaN, and Infinity are skipped.
- * Note that `0` and `false` are usable, matching `option()` semantics.
+ * Note that `0` and `false` count as usable, just as they do in `option()`.
  *
  * @param values - Values to inspect in order; first usable one wins.
  * @param fallback - `Err` returned when no value is usable (default `Err("No value!")`).

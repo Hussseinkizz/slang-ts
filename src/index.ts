@@ -38,7 +38,7 @@ export { zip, zipWith, unzip } from "./zip";
 export { safeTry } from "./safe-try";
 
 // Fallible collection chains
-export type { Fallible, SlangErrorCode } from "./fallible";
+export type { Fallible, SlangErrorCategory } from "./fallible";
 export { list } from "./list";
 export type { ListChain, ListGet, ListInput } from "./list";
 export { struct } from "./struct";

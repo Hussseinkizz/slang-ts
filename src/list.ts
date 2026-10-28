@@ -2,7 +2,7 @@ import { Err, Ok } from "./result";
 import type { Result, Ok as OkType } from "./result";
 import { isFalsy } from "./option";
 import { chain, createFallible, fail, succeed } from "./fallible";
-import type { Fallible, SlangErrorCode } from "./fallible";
+import type { Fallible, SlangErrorCategory } from "./fallible";
 import { isResult } from "./internals";
 
 /** Accepted list input: a raw array, or a narrowed successful `Ok` holding one. */
@@ -51,11 +51,11 @@ function readList<T>(
 /** Builds a list chain around an outcome. @internal */
 function createList<T>(
   outcome: Result<readonly T[], string>,
-  code: SlangErrorCode | undefined,
+  category: SlangErrorCategory | undefined,
 ): ListChain<T> {
-  const base = createFallible(outcome, code);
+  const base = createFallible(outcome, category);
   const asList = (next: Fallible<readonly T[]>): ListChain<T> =>
-    createList<T>(next.outcome, next.code);
+    createList<T>(next.outcome, next.category);
 
   const get = ((index: number, ...fallback: [unknown?]): Fallible<unknown> => {
     return chain(base, (value): Fallible<unknown> => {
@@ -124,7 +124,7 @@ function createList<T>(
         }
         return succeed<readonly (readonly T[])[]>(groups);
       });
-      return createList<readonly T[]>(next.outcome, next.code);
+      return createList<readonly T[]>(next.outcome, next.category);
     },
     count(): Fallible<number> {
       return chain(base, (value) => succeed(value.length));

@@ -9,7 +9,7 @@ let printFn: PrintFn | null = null;
 
 /**
  * Sets the runtime environment for dev-only utilities.
- * Idempotent — safe to call any number of times, in any order; the last call wins.
+ * Safe to call any number of times, in any order; the last call wins.
  * Accepts a mode (full words or short forms: "development"/"dev", "production"/"prod")
  * or options `{ printFn }` to route println through an existing logger instead of
  * the console — useful in production, where logs go somewhere real.

@@ -1,6 +1,6 @@
 import { isFalsy } from "./option";
 import { chain, createFallible, fail, succeed } from "./fallible";
-import type { Fallible, SlangErrorCode } from "./fallible";
+import type { Fallible, SlangErrorCategory } from "./fallible";
 import { buildOk, Err } from "./result";
 import type { Result, Ok as OkType } from "./result";
 import { isResult } from "./internals";
@@ -56,11 +56,11 @@ export type StructChain<T> = Fallible<T> & {
 /** Builds a struct chain around an outcome. @internal */
 function createStruct<T>(
   outcome: Result<T, string>,
-  code: SlangErrorCode | undefined,
+  category: SlangErrorCategory | undefined,
 ): StructChain<T> {
-  const base = createFallible(outcome, code);
+  const base = createFallible(outcome, category);
   const rebuild = (next: Fallible<unknown>): StructChain<T> =>
-    createStruct<T>(next.outcome as unknown as Result<T, string>, next.code);
+    createStruct<T>(next.outcome as unknown as Result<T, string>, next.category);
 
   const asRecord = (value: T): Record<string, unknown> | undefined =>
     isRecord(value) ? value : undefined;

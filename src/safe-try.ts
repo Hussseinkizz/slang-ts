@@ -4,7 +4,7 @@ import type { Some, None } from "./option";
 import type { Atom } from "./atom";
 import { evaluateValue, isAtom, isResult, isOption, describeThrown, panicNestedResult, isNestedResultPanic } from "./internals";
 
-/** Terminal success value after resolving supported Slang wrappers. */
+/** Final success value after resolving supported Slang wrappers. */
 type SafeTryValue<T> = T extends Atom<infer Name>
   ? Name
   : T extends OkType<infer Value>
@@ -41,7 +41,7 @@ type SafeTryOptions = {
  *
  * @param fn - Function to execute (sync or async)
  * @param options - `{ throw?: boolean; collectValues?: boolean }`
- * @returns Promise of one Result containing the terminal success value or error text
+ * @returns Promise of one Result containing the final success value or error text
  *
  * @example
  * const result = await safeTry(() => Ok(option("Hello")));

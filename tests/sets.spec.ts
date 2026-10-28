@@ -24,13 +24,13 @@ describe("sets", () => {
   });
 
   it("fails on unsupported input", () => {
-    expect(sets(42 as any).count().code).toBe("INVALID_INPUT");
+    expect(sets(42 as any).count().category).toBe("INVALID_INPUT");
   });
 
   it("accepts a narrowed Ok and refuses an Err", () => {
     expect(sets(Ok([1, 2])).count().else(0)).toBe(2);
     expect(sets(Ok({ read: true })).has("read").else(false)).toBe(true);
-    expect(sets(Err("nope") as any).count().code).toBe("INVALID_INPUT");
+    expect(sets(Err("nope") as any).count().category).toBe("INVALID_INPUT");
   });
 
   it("compares objects by identity", () => {
@@ -51,7 +51,7 @@ describe("sets", () => {
   it("unions object keys and rejects unsupported operands", () => {
     expect([...sets(["a"]).union({ b: 1 }).else(new Set())]).toEqual(["a", "b"]);
     expect([...sets(["a"]).union(Ok({ b: 1 })).else(new Set())]).toEqual(["a", "b"]);
-    expect(sets([1]).union(42 as any).code).toBe("INVALID_INPUT");
+    expect(sets([1]).union(42 as any).category).toBe("INVALID_INPUT");
   });
 
   it("keeps prototype-looking object keys as members", () => {

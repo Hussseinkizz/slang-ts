@@ -12,8 +12,7 @@ The returned `StructChain<T>` is a `Fallible<T>`:
 
 - `else(fallback)`: the value, or a fallback value/function. A function fallback receives the error.
 - `panic(message?)`: the value, or a thrown error. The message defaults to the failure message.
-- `outcome`: the underlying `Result<T, string>`.
-- `code`: the failure code, or `undefined` on success.
+- `category`: the failure category, or `undefined` on success.
 
 Record operations (`get`, `pick`, `omit`, `merge`, `count`, `prune`) need a record, and collection
 operations (`countBy`, `keyBy`) need an array. Use one on the wrong shape and it fails with
@@ -134,7 +133,7 @@ stringified, so the number `1` becomes the key `"1"`. Both need an array, so a r
 
 ```ts
 const missing = struct(user).get("nickname");
-println(missing.code);         // "OUT_OF_BOUNDS"
+println(missing.category);     // "OUT_OF_BOUNDS"
 println(missing.else("none")); // "none"
 
 const name = struct(user).get("name").panic();
@@ -158,7 +157,7 @@ you pass.
 - `prune` drops Slang-falsy values by default and keeps `0` and `false`. Its predicate receives the
   value and the key. It needs a record.
 - A wrong shape for the operation is `INVALID_INPUT`, and a missing `get` path is `OUT_OF_BOUNDS`.
-  Chains short-circuit on the first failure, and the code survives.
+  Once a chain fails, later steps don't run, and the category survives.
 
 ## See also
 

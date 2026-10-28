@@ -47,9 +47,9 @@ describe("Ok.iterate", () => {
   });
 
   it("reports invalid counts without yielding a partial success", () => {
-    expect(Ok([1, 2]).iterate().take(-1).toArray().code).toBe("INVALID_INDEX");
-    expect(Ok([1, 2]).iterate().drop(1.5).toArray().code).toBe("INVALID_INDEX");
-    expect(Ok([1, 2]).iterate().chunk(0).toArray().code).toBe("INVALID_CHUNK_SIZE");
+    expect(Ok([1, 2]).iterate().take(-1).toArray().category).toBe("INVALID_INDEX");
+    expect(Ok([1, 2]).iterate().drop(1.5).toArray().category).toBe("INVALID_INDEX");
+    expect(Ok([1, 2]).iterate().chunk(0).toArray().category).toBe("INVALID_CHUNK_SIZE");
   });
 
   it("keeps the mapped collection type through chunk", () => {
@@ -65,7 +65,7 @@ describe("Ok.iterate", () => {
     }
     const chain = Ok(values()).iterate();
     expect(chain.toArray().else([])).toEqual([1, 2]);
-    expect(chain.toArray().code).toBe("INVALID_INPUT");
+    expect(chain.toArray().category).toBe("INVALID_INPUT");
   });
 
   it("captures iteration errors", () => {
@@ -75,13 +75,13 @@ describe("Ok.iterate", () => {
       },
     };
     const out = Ok(boom).iterate().toArray();
-    expect(out.code).toBe("INVALID_INPUT");
+    expect(out.category).toBe("INVALID_INPUT");
     expect(out.else([])).toEqual([]);
   });
 
   it("fails a non-iterable value at the terminal", () => {
     const out = Ok(42).iterate().toArray();
-    expect(out.code).toBe("INVALID_INPUT");
+    expect(out.category).toBe("INVALID_INPUT");
     expect(out.else([])).toEqual([]);
   });
 
@@ -120,7 +120,7 @@ describe("Ok.iterate", () => {
       })
       .toArray();
 
-    expect(out.code).toBe("INVALID_INPUT");
+    expect(out.category).toBe("INVALID_INPUT");
     expect(out.else([])).toEqual([]);
   });
 

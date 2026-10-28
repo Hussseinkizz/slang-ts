@@ -1,13 +1,13 @@
 # SuperRunner
 
 `SuperRunner` gives you `Promise.all`, `Promise.race`, and a plain `await` chain for
-`SuperPromise`s, with cancellation and clean `Result` outcomes.
+`SuperPromise`s, with cancellation and `Ok`/`Err` results.
 
 ## What it is
 
-A runner orchestrates several already-created `SuperPromise`s. You can run them in order, in
-parallel, or take the first successful completions. `start()` runs once, and calling it again
-returns the same result without re-running anything.
+A runner manages several already-created `SuperPromise`s. You can run them in order, in parallel,
+or take the first successful completions. `start()` runs once, and calling it again returns the
+same result without re-running anything.
 
 ## When to use it
 
@@ -110,9 +110,9 @@ parallel.abort(); // cancels all active children
 
 - `race` needs `count >= 1`. If no runner succeeds, it returns `Err("All runners failed")`. If some
   succeed but fewer than `count`, it returns `Err("Not enough runners succeeded")`.
-- `start()` is idempotent and lazy. Nothing runs until you call it.
-- `abort()` settles the runner with `Err("Aborted")` and cancels active children. `done` fires once
-  when the runner reaches a terminal state.
+- `start()` only runs once, and nothing runs until you call it.
+- `abort()` ends the runner with `Err("Aborted")` and cancels active children. `done` fires once
+  when the runner finishes.
 - The runner doesn't retry, time out, or schedule work itself. Those belong to the child
   `SuperPromise` options.
 

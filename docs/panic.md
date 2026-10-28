@@ -10,7 +10,7 @@ invariant, a case the program can't safely continue from. It doesn't return.
 ## When to use it
 
 - A required config value is missing at startup.
-- A function's contract was violated and there's no sensible fallback.
+- A function receives input it can't handle and there's no sensible fallback.
 - You want a guard clause instead of nesting the rest of the function.
 
 Use [Result](result.md) for expected failures the caller can handle. Reach for a panic when there's
@@ -34,8 +34,8 @@ if (!config.apiKey) panic("API key required");
 
 ## Notes
 
-- `panic` throws an `Error`. It's still a normal JavaScript throw, so an outer `try`/`catch` can
-  catch it. That doesn't make it a recovery strategy.
+- `panic` throws an `Error`, so an outer `try`/`catch` can catch it. That doesn't make it a
+  recovery strategy.
 - The message reaches the caller, so make it useful and human-readable.
 - Don't use `panic` for validation or user input. Return an `Err`, a form error, or a proper
   response instead.

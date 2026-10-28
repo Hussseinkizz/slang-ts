@@ -2,10 +2,10 @@ import { Err, buildOk } from "./result";
 import type { Result } from "./result";
 
 /**
- * Stable codes for fallible collection chains.
- * Callers branch on the code; the message is for a human.
+ * Stable categories for fallible collection chains.
+ * Callers branch on the category; the message is for a human.
  */
-export type SlangErrorCode =
+export type SlangErrorCategory =
   | "INVALID_INPUT"
   | "INVALID_INDEX"
   | "OUT_OF_BOUNDS"
@@ -19,8 +19,8 @@ export type SlangErrorCode =
 export type Fallible<T> = {
   /** The underlying outcome, for composing chains. */
   readonly outcome: Result<T, string>;
-  /** The failure code, or `undefined` when the outcome succeeded. */
-  readonly code: SlangErrorCode | undefined;
+  /** The failure category, or `undefined` when the outcome succeeded. */
+  readonly category: SlangErrorCategory | undefined;
   /** Returns the value, or the fallback when the chain failed. */
   else(fallback: T | ((error: string) => T)): T;
   /** Returns the value, or throws when the chain failed. */
@@ -28,16 +28,16 @@ export type Fallible<T> = {
 };
 
 /**
- * Wraps an outcome with the terminal resolution surface.
+ * Wraps a result so it can be resolved with `.else(...)` or `.panic(...)`.
  * @internal
  */
 export function createFallible<T>(
   outcome: Result<T, string>,
-  code: SlangErrorCode | undefined,
+  category: SlangErrorCategory | undefined,
 ): Fallible<T> {
   return {
     outcome,
-    code,
+    category,
     else(fallback) {
       if (outcome.isOk) return outcome.value;
       return typeof fallback === "function"
@@ -56,9 +56,9 @@ export function succeed<T>(value: T): Fallible<T> {
   return createFallible(buildOk(value), undefined);
 }
 
-/** A coded failure. @internal */
-export function fail<T>(code: SlangErrorCode, message: string): Fallible<T> {
-  return createFallible(Err(message) as unknown as Result<T, string>, code);
+/** A categorized failure. @internal */
+export function fail<T>(category: SlangErrorCategory, message: string): Fallible<T> {
+  return createFallible(Err(message) as unknown as Result<T, string>, category);
 }
 
 /**
@@ -72,7 +72,7 @@ export function chain<T, U>(
   if (source.outcome.isErr) {
     return createFallible(
       Err(source.outcome.error) as unknown as Result<U, string>,
-      source.code,
+      source.category,
     );
   }
   return step(source.outcome.value);

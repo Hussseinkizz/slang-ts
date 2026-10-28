@@ -30,13 +30,13 @@ export type SuperPromiseOptions = {
   retry?: number;
   /** Keep retrying until the stop signal fires. Overrides `retry` and `delay`. */
   retryUntil?: RetryUntilOptions;
-  /** Shared scheduler this task coordinates through. A retry reacquires admission. */
+  /** Shared task group this task runs through. A retry waits for a new slot. */
   group?: TaskGroup;
 };
 
-/** A single async operation with lifecycle ergonomics. Promise-compatible. */
+/** A single async operation with start, retry, timeout, and cancel controls. Promise-compatible. */
 export type SuperPromise<T> = {
-  /** Lifecycle signal: fires once when the task reaches a terminal state. */
+  /** Fires once when the task finishes. */
   done: AbortSignal;
   /** Cancels the operation; settles with `Err("Aborted")` when not yet settled. */
   abort(): void;
@@ -81,11 +81,11 @@ type AttemptOutcome<T> =
   | { kind: "timedOut" };
 
 /**
- * Creates a SuperPromise — one async operation plus lifecycle/execution ergonomics.
+ * Creates a SuperPromise — one async operation plus start, retry, timeout, and cancel controls.
  *
- * Lazy activation: the executor starts on first consumption (`await`/`.then()`,
- * or a runner's `start()`), not at creation. Defer chains activate recursively,
- * so awaiting a deferred task runs its dependency first.
+ * Lazy start: your function runs on first use (`await`/`.then()`, or a runner's `start()`),
+ * not at creation. Defer chains start recursively, so awaiting a deferred task runs its
+ * dependency first.
  *
  * @example
  * const task = superPromise(async signal => {

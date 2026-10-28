@@ -2,7 +2,7 @@ import { Err } from "./result";
 import { buildOk } from "./result";
 import type { Result, Ok as OkType } from "./result";
 import { chain, createFallible, fail, succeed } from "./fallible";
-import type { Fallible, SlangErrorCode } from "./fallible";
+import type { Fallible, SlangErrorCategory } from "./fallible";
 import { isResult } from "./internals";
 
 /** Accepted set input: any iterable, Set, Map (keys), plain object (keys), or a narrowed Ok. */
@@ -70,11 +70,11 @@ export type SetsChain<T = unknown> = Fallible<Set<T>> & {
 /** Builds a set chain around an outcome. @internal */
 function createSets<T>(
   outcome: Result<Set<T>, string>,
-  code: SlangErrorCode | undefined,
+  category: SlangErrorCategory | undefined,
 ): SetsChain<T> {
-  const base = createFallible(outcome, code);
+  const base = createFallible(outcome, category);
   const asSets = <U>(next: Fallible<Set<U>>): SetsChain<U> =>
-    createSets<U>(next.outcome, next.code);
+    createSets<U>(next.outcome, next.category);
 
   const combine = <U, R>(
     other: SetsInput,

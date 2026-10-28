@@ -2,16 +2,16 @@
 export type TaskGroupOptions = {
   /** Maximum tasks active at once. Defaults to unlimited. */
   concurrency?: number;
-  /** Minimum milliseconds between admitted starts. Defaults to 0. */
+  /** Minimum milliseconds between starts. Defaults to 0. */
   throttle?: number;
 };
 
-/** A shared scheduler that tasks and runners can coordinate through. */
+/** A shared group that limits concurrency and spaces out starts for tasks and runners. */
 export type TaskGroup = {
   readonly name: string;
   /**
-   * Waits for admission, then returns a release callback.
-   * A retry is a new admission and must call this again.
+   * Waits for a free slot, then returns a release callback.
+   * A retry needs a new slot and must call this again.
    */
   acquire(): Promise<() => void>;
 };
@@ -21,7 +21,7 @@ export type TaskGroup = {
  * A group does not cancel running work and does not manage idempotency.
  *
  * @example
- * const api = taskGroup("upstream", { concurrency: 3, throttle: 200 });
+ * const api = taskGroup("user-api", { concurrency: 3, throttle: 200 });
  * superPromise(fetchUsers, { group: api });
  */
 export function taskGroup(name: string, options: TaskGroupOptions = {}): TaskGroup {

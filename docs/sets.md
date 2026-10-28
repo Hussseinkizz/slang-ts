@@ -6,15 +6,14 @@
 ## What it is
 
 Reach for `sets` when the question is "is this value a member?" or "what do these collections
-share?". The chain wraps a native `Set`, so comparison follows native semantics: primitives by
+share?". The chain wraps a native `Set`, so comparison follows native `Set` rules: primitives by
 value, objects by identity. Duplicate values collapse into one member.
 
 The returned `SetsChain<T>` is a `Fallible<Set<T>>`:
 
 - `else(fallback)`: the value, or a fallback value/function. A function fallback receives the error.
 - `panic(message?)`: the value, or a thrown error. The message defaults to the failure message.
-- `outcome`: the underlying `Result<Set<T>, string>`.
-- `code`: `INVALID_INPUT` on failure, or `undefined` on success.
+- `category`: `INVALID_INPUT` on failure, or `undefined` on success.
 
 Supported input:
 
@@ -128,12 +127,12 @@ Strings, numbers, booleans, and `NaN` are compared by value; `NaN` matches `NaN`
 
 - `sets` copies the input. A `Set` or `Map` you pass in isn't changed, and later changes to it don't
   show up in the chain.
-- `has` returns a boolean outcome. A missing member is a successful `false`, not a failure.
+- `has` returns a boolean. A missing member is a successful `false`, not a failure.
 - `union`, `intersection`, and `difference` accept the same input forms as `sets`, including a
   narrowed `Ok`. They return new sets and never mutate the chain or the input.
 - Object input uses own enumerable keys, so inherited keys are ignored. Values are ignored too,
   which means a `false` flag still contributes its key.
-- `INVALID_INPUT` is the only code `sets` raises. Finish the chain with `.else(...)` or
+- `INVALID_INPUT` is the only category `sets` reports. Finish the chain with `.else(...)` or
   `.panic(...)`.
 
 ## See also

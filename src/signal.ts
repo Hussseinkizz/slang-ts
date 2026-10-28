@@ -1,11 +1,11 @@
 /**
  * A lifecycle Signal — a trigger that fires once and stays fired.
  *
- * Abort-compatible: structurally an `AbortSignal` plus a `fire()` method,
+ * ... structurally an `AbortSignal` plus a `fire()` method,
  * so it can be passed anywhere a native `AbortSignal` is expected
- * (and vice-versa). Wraps AbortController semantics.
+ * (and vice-versa). Wraps `AbortController` behavior.
  *
- * Consumed by `defer`, `retryUntil`, `channel.when`, and `task.done`.
+ * Used by `defer`, `retryUntil`, `channel.when`, and `task.done`.
  */
 export type Signal = AbortSignal & {
   /** Fires the signal once. Subsequent calls are no-ops. */
