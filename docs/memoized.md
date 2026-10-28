@@ -1,7 +1,20 @@
 # memoized
 
-`memoized(fn)` gives you a function that remembers the results of earlier calls. Call it with the
-same arguments and you get the cached result instead of running `fn` again.
+`memoized(fn)` — caches a function's result by its arguments. Call it with the same arguments and
+you get the cached result instead of running `fn` again.
+
+```ts
+// Signature
+memoized<TArgs extends any[], TResult>(fn: (...args: TArgs) => TResult): MemoizedFn<TArgs, TResult>;
+
+/* Cached function */
+memoizedFn(...args);   // TResult — cached result, or computes and stores it
+memoizedFn.clear();    // removes every entry (no per-key delete)
+```
+
+Arguments are keyed by position; primitives use SameValueZero, objects compare by identity.
+`undefined` is a valid cached result. A rejected Promise is removed so a later call can retry. The
+cache has no size limit and no expiry — it holds keys and results until `clear()`.
 
 ## What it is
 

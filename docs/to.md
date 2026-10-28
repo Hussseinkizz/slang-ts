@@ -1,6 +1,21 @@
 # To
 
-`To` converts between Slang types: `Option`, `Atom`, and `Result`.
+`To` converts between Slang types: `Option`, `Atom`, and `Result`. Converters live as `.to()`
+methods on the wrappers themselves.
+
+```ts
+// Signature
+option<T>(value).to(target: "atom" | "option" | "result");
+atom<T>(name).to(target: "option" | "result");
+```
+
+- `option("ready").to("atom")` → `Atom("ready")`
+- `option(null).to("result")` → `Err("Value is None")`
+- `atom("ready").to("option")` → `Some("ready")`
+- `atom("ready").to("result")` → `Ok("ready")`
+
+Don't use conversions to hide a failure. `None` becomes `Err("Value is None")`; it doesn't invent a
+value.
 
 ## What it is
 

@@ -1,7 +1,31 @@
 # list
 
-`list(input)` gives you a chain over a finite array, with strict bounds. Out-of-range work fails
-instead of clamping, so a bad page or batch is visible instead of quietly returning less data.
+`list(input)` — strict indexed chains over a finite array with explicit bounds. Out-of-range work
+fails instead of clamping.
+
+```ts
+// Signature
+list<T>(input: readonly T[] | Ok<readonly T[]>): ListChain<T>;
+
+/* Chain methods */
+chain.get(index: number);                         // Fallible<T> — reads one index (-1 = last)
+chain.get(index, fallback);                       // Fallible<T | U> — fallback on out-of-range
+chain.take(n: number);                            // ListChain<T> — first n items
+chain.skip(n: number);                            // ListChain<T> — drops first n (last n when negative)
+chain.range(start, end);                          // ListChain<T> — half-open [start, end)
+chain.chunk(size: number);                        // ListChain<readonly T[]> — groups of size
+chain.count();                                    // Fallible<number> — length
+chain.prune(predicate?);                          // ListChain<T> — drops Slang-falsy values
+
+/* Finish */
+chain.unwrap().else(fallback);    // value or fallback on failure
+chain.panic(message?);            // throws on failure (message defaults to the error)
+chain.category;                   // SlangErrorCategory | undefined — the failure category
+```
+
+`get` already takes a fallback — use either `get(index, fallback)` **or** `get(index).else(...)`, not both.
+Bounds are strict: `take(5)` on a two-item list fails, and `get` needs an integer (`1.5`, `NaN`,
+`Infinity` fail with `INVALID_INDEX`). Negative indices count from the end.
 
 ## What it is
 

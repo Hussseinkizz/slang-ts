@@ -1,7 +1,26 @@
 # SuperRunner
 
-`SuperRunner` gives you `Promise.all`, `Promise.race`, and a plain `await` chain for
-`SuperPromise`s, with cancellation and `Ok`/`Err` results.
+`superRunner(config)` — manages several already-created `SuperPromise`s: run them in sequence, in
+parallel, or as a race. `start()` runs once and returns the same result on later calls.
+
+```ts
+// Signature
+superRunner<R>(config: { type: "sequence", runners: R }): SuperRunner<TupleValues<R>>;
+superRunner<R>(config: { type: "all", runners: R }): SuperRunner<NamedValues<R>>;
+superRunner<R, C>(config: { type: "race", count: C, runners: R }): SuperRunner<RaceValues<C, R>>;
+
+/* Result methods */
+runner.start();   // Promise<Result<Value, string>> — runs once, cached afterward
+runner.abort();   // ends with Err("Aborted") and cancels active children
+runner.done;      // AbortSignal — fires once when the runner finishes
+```
+
+- `sequence` — stops at the first failure; result is a tuple of values in order.
+- `all` — all runners kick off at once; result is keyed by name; fails fast on first failure.
+- `race` — takes the first `count` successful responses, cancels the rest.
+
+The runner itself doesn't retry, time out, or schedule work — those belong to the child
+`SuperPromise` options.
 
 ## What it is
 

@@ -1,7 +1,26 @@
 # createStepper
 
-`createStepper<T>(config?)` keeps a bounded history of keyed steps and lets you move forward and
-back. Use it for wizards, onboarding flows, undo stacks, or any state that needs named checkpoints.
+`createStepper<T>(config?)` — bounded history of keyed steps for wizards, onboarding flows, and undo
+stacks.
+
+```ts
+// Signature
+createStepper<T>(config?: { maxHistory?: number; maxSteps?: number | null; keyEvalFn?: (key: string) => boolean | Promise<boolean> }): Stepper<T>;
+
+/* Stepper methods */
+stepper.next(fn, options?);     // Promise<Result<Step<T>, string>> — saves a step (async)
+stepper.prev(offset?);          // Resolvable — finish with .else(recover) or .panic(message?)
+stepper.current;                // Step<T> | undefined — the step at the current position
+stepper.size;                   // number — stored step count
+
+/* Config */
+{ maxHistory?: number }   — bounded history size (default 50, positive integer)
+{ maxSteps?: number }     — lifetime forward moves (default null = unlimited)
+{ keyEvalFn? }            — acceptance check on candidate keys
+```
+
+Each step is `{ key, value }` where `key` is a nonempty string. `next` is async and calls are
+serialized. `prev` is synchronous and never returns a `Result`.
 
 ## What it is
 

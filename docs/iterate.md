@@ -1,8 +1,33 @@
 # Ok.iterate
 
-`Ok(value).iterate()` turns the value's collection into a lazy pipeline. You describe the work with
-`map`, `filter`, `flatMap`, `take`, `drop`, and `chunk`, then finish with `reduce`, `count`, or
-`toArray`.
+`Ok(value).iterate()` — lazy pipelines over a successful collection inside an `Ok`.
+
+```ts
+// Signature
+Ok<T>(value).iterate(): IterateChain<T>;
+
+/* Transformations — each returns a new chain */
+chain.map(callback);        // IterateChain<U> — transform each element
+chain.filter(callback);     // IterateChain<T> — keep matching elements
+chain.flatMap(callback);    // IterateChain<U> — each value becomes zero, one, or many
+chain.take(n);              // IterateChain<T> — at most n values
+chain.drop(n);              // IterateChain<T> — skip n values
+chain.chunk(size);          // IterateChain<readonly T[]> — groups of size
+
+/* Finishers — return Fallible */
+chain.reduce(callback, seed);   // Fallible<accumulator>
+chain.count();                  // Fallible<number> — number of values
+chain.toArray();                // Fallible<readonly T[]>
+
+/* Finish */
+chain.unwrap().else(fallback);    // value or fallback on failure
+chain.panic(message?);            // throws on failure (message defaults to the error)
+chain.category;                   // SlangErrorCategory | undefined — the failure category
+```
+
+`iterate()` only works on a successful `Ok`. An `Err` has no chain — check `.isOk` first.
+Transformations are lazy; nothing is read until you call a finisher. `take` can stop an infinite
+source early after the count you asked for.
 
 ## What it is
 

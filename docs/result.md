@@ -1,7 +1,29 @@
 # Result
 
-`Result` represents an operation that can succeed or fail. `Ok(value)` means success; `Err(error)`
-means failure.
+`Result<T, E>` — an operation that either succeeds with `Ok<T>` or fails with `Err<E>`.
+
+```ts
+// Signature
+type Result<T, E> = Ok<T> | Err<E>;
+
+/* Constructors */
+Ok<T>(value: T, message?: string);   // success; optional user-facing message
+Err<E>(error: string, raw?: unknown); // failure; optional diagnostic cause
+
+/* Methods — all return T unless noted */
+result.unwrap().else(fallback);       // T — the Ok value, or the fallback for Err
+result.panic(message?);               // T — throws on Err (message defaults to the error)
+result.andThen(fn);                   // transforms Ok, skips Err; a returned Result is flattened
+result.expect(msg?);                  // T — throws on Err (msg defaults to the error)
+result.iterate();                     // only on Ok; lazy collection pipeline
+```
+
+`Ok(value, message?)` builds a success. `message` is optional and only shows up when present —
+results without one have no `message` property. `Err(error, raw?)` builds a failure; `error` is the
+human-readable message, and the optional `raw` is a non-enumerable diagnostic cause that never
+leaks into `JSON.stringify`, spread, or `Object.keys`.
+
+A `Result` never nests inside another `Result` — `Ok(Ok(x))` and `Ok(Err(x))` won't compile.
 
 ## What it is
 

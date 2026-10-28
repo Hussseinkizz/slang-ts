@@ -1,7 +1,21 @@
 # println
 
-`println` is `console.log` for development output. It stays quiet in production unless you route it
+`println(...args)` — `console.log` for development output. Silent in production unless you route it
 to a logger.
+
+```ts
+// Signature
+println(...args: unknown[]): void;
+setEnvironment(mode: "development" | "production" | { printFn }): void;
+```
+
+- `setEnvironment("development")` (default) — prints via `console.log`.
+- `setEnvironment("production")` — silent unless a `printFn` is set.
+- `setEnvironment({ printFn })` — routes every `println` through your logger instead.
+
+`println` joins arguments with spaces and appends a newline. A custom `printFn` gets the final line
+(newline included). For structured logs, levels, or transports, use your app's logger through
+`printFn`.
 
 ## What it is
 

@@ -1,7 +1,32 @@
 # struct
 
-`struct(input)` reads, shapes, and merges plain records, and it can group an array of records by a
-key. Every operation returns a fallible result you finish with `.else(...)` or `.panic(...)`.
+`struct(input)` — safe record access, shaping, merging, and grouping. Every operation returns a
+fallible result you finish with `.else(...)` or `.panic(...)`.
+
+```ts
+// Signature
+struct<T>(input: T | Ok<T>): StructChain<T>;
+
+/* Record operations — all return Fallible unless noted */
+chain.get(path);                          // Fallible<T[path]> — known top-level key keeps its type
+chain.get(path, fallback);                // Fallible<T[path] | U> — fallback on missing path
+chain.pick(...keys);                      // StructChain<Pick<T, K>> — keeps named keys
+chain.omit(...keys);                      // StructChain<Omit<T, K>> — drops named keys
+chain.merge(source);                      // StructChain<T> — deep merge, never mutates input
+chain.count();                            // Fallible<number> — own enumerable top-level keys
+chain.countBy(selector);                  // Fallible<Record<string, number>> — rows per key
+chain.keyBy(selector);                    // Fallible<Record<string, row>> — one row per key
+chain.prune(predicate?);                  // StructChain<T> — drops Slang-falsy values
+
+/* Finish */
+chain.unwrap().else(fallback);    // value or fallback on failure
+chain.panic(message?);            // throws on failure (message defaults to the error)
+chain.category;                   // SlangErrorCategory | undefined — the failure category
+```
+
+`get` already takes a fallback — use either `get(path, fallback)` **or** `get(path).else(...)`, not both.
+A string path is one literal key (not split on dots); use an array path for nesting. Missing paths
+fail with `OUT_OF_BOUNDS`; wrong shape for the operation fails with `INVALID_INPUT`.
 
 ## What it is
 

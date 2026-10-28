@@ -1,6 +1,18 @@
 # Zip
 
-`zip`, `zipWith`, and `unzip` combine collections that line up, and take them apart again.
+`zip(inputs, options?)` — combines parallel collections into rows; `zipWith` transforms each row;
+`unzip` reverses `zip`.
+
+```ts
+// Signature
+zip<T>(inputs: readonly T[][], options?: { fillValue?: unknown; includeValues?: boolean }): Array<Array<T>>;
+zipWith<T, R>(inputs: readonly T[][], fn: (row: Array<T>) => R, options?): Array<R>;
+unzip<T>(rows: Array<Array<T>>): Array<Array<T>>;
+```
+
+By default only arrays are accepted. `includeValues: true` adds `Set`s and objects (reads values,
+not keys). Without `fillValue`, `zip` stops at the shortest input; with it, goes to the longest and
+fills gaps. `zip` and `zipWith` return new arrays and don't mutate inputs.
 
 ## What it is
 

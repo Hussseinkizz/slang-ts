@@ -1,6 +1,15 @@
 # Panic
 
-`panic(message)` throws immediately. Use it when carrying on would be worse than stopping.
+`panic(message)` — throws immediately. Use it when carrying on would be worse than stopping.
+
+```ts
+// Signature
+panic(message: string): never;
+```
+
+`panic` is for unrecoverable states: missing configuration, a broken invariant, a case the program
+can't safely continue from. It throws an `Error`, so an outer `try`/`catch` can catch it — but that
+doesn't make it a recovery strategy. Use `Result` for expected failures the caller can handle.
 
 ## What it is
 

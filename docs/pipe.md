@@ -1,6 +1,18 @@
 # Pipe
 
-`pipe` runs functions in order. Each function gets a `Result` and returns a `Result`.
+`pipe(value, ...fns)` — runs `Result`-returning steps in order, stopping at the first failure.
+
+```ts
+// Signature
+pipe<T>(value: T, ...fns: Array<(res: Result<T, string>) => Result<U, string>>): Pipe<T>;
+
+/* Result */
+pipe.run(options?);   // Promise<Result<final, string>>
+```
+
+Each function receives the previous `Result` and returns a `Result`. By default the pipeline stops
+at the first `Err`. Options: `onEach`, `onSuccess`, `onError`, `allowErrors` (default `false` — stop
+at the first `Err`). `run()` returns a promise, so await it.
 
 ## What it is
 

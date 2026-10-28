@@ -1,7 +1,20 @@
 # Channel
 
-A channel lets parts of an app that don't know each other talk: one side publishes, the other
-listens.
+`createChannel()` — a small in-process event bus. One side publishes, the other listens.
+
+```ts
+// Signature
+createChannel(): Channel;
+
+/* Channel methods */
+channel.subscribe(topic, handler);   // unsubscribe() — listener for exact-topic events
+channel.send(topic, data);           // synchronous; subscribers run before send returns
+channel.when({ signal, topic, data });   // publishes when a signal fires
+```
+
+Topics are exact strings (no wildcards). `subscribe` returns an unsubscribe function. Sending to a
+topic with no subscribers does nothing. Events aren't replayed — a subscriber added after an event
+misses it. For cross-process messaging, use a real message broker; a channel is for one process.
 
 ## What it is
 

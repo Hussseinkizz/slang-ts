@@ -1,7 +1,28 @@
 # sets
 
-`sets(input)` turns a collection into a membership chain. You can feed it arrays, iterables, `Set`,
-`Map` keys, string characters, or plain object keys.
+`sets(input)` — membership and set operations over collections. Comparisons follow native `Set`
+rules: primitives by value, objects by identity.
+
+```ts
+// Signature
+sets<T>(input: Iterable<T> | Set<T> | Map<unknown, T> | Record<string, unknown> | Ok<Iterable<T>>): SetsChain<T>;
+
+/* Membership and algebra — all return Fallible */
+chain.has(value);                  // Fallible<boolean> — is value a member? (false is success, not failure)
+chain.unique();                    // SetsChain<T> — fresh copy with duplicates removed
+chain.union(other);                // SetsChain<T> — members from both sides
+chain.intersection(other);         // SetsChain<T> — members present in both
+chain.difference(other);           // SetsChain<T> — left-side members not on the right
+
+/* Finish */
+chain.unwrap().else(fallback);    // value or fallback on failure
+chain.panic(message?);            // throws on failure (message defaults to the error)
+chain.category;                   // SlangErrorCategory | undefined — INVALID_INPUT on failure
+```
+
+Object input reads own enumerable keys only; values are ignored, so a `false` flag still
+contributes its key. Duplicate values collapse into one member. `sets` copies the input while
+building the chain.
 
 ## What it is
 

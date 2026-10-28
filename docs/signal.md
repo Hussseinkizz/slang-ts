@@ -1,7 +1,21 @@
 # Signal
 
-A signal is a trigger that fires once and stays fired. Fire it when you're ready, and anything
-waiting on it reacts.
+`createSignal()` — a trigger that fires once and stays fired. Fire it when you're ready, and
+anything waiting on it reacts.
+
+```ts
+// Signature
+createSignal(): Signal;
+
+/* Signal — an AbortSignal plus fire() */
+signal.fire();      // fires once; later calls do nothing
+signal.aborted;     // true after firing
+signal.addEventListener("abort", listener); // works like a native AbortSignal
+```
+
+`createSignal()` returns an `AbortSignal` with a `fire()` method, so you can hand it to anything
+that accepts an `AbortSignal` (e.g. `superPromise`'s `defer` or `retryUntil`). Listeners aren't
+replayed after firing.
 
 ## What it is
 
