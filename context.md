@@ -16,7 +16,7 @@ Goal: give `slang-ts` docs a direct, human voice while preserving the user's own
 ### Removed
 
 - Release/version bookkeeping from README and CHANGELOG; `package.json` is the version source.
-- Changelog release/unreleased labels and dates — it lists features/changes only.
+- Changelog release/unreleased labels and dates: it lists features/changes only.
 - README note about versions.
 - Obvious platform notes (localStorage browser-only, fetch availability, console.log fallback).
 - Internal details users don't need, e.g. the `outcome` property on `Fallible`.
@@ -59,8 +59,8 @@ Specific doc edits:
 - `docs/stepper.md`: finished wording review; no leftover "an dropped," "commit," "retained," or "evicted."
 - `docs/list.md` / `docs/struct.md` / `docs/sets.md`: removed `outcome` bullets (internal `Result` leak).
 - `docs/match.md`: added error-category example using `matchAll` to turn `.category` strings into user-facing messages.
-- `docs/list.md`: failure example checks `.category` first, uses `.else([])` for `OUT_OF_BOUNDS`, and `.panic(failed.category)` for unhandled failures — panic with the category itself since a custom user message is never read once the program panics.
-- `docs/struct.md` / `docs/list.md`: removed redundant `.get(x, fallback).else(fallback)` — `get` already takes a fallback; use one or the other.
+- `docs/list.md`: failure example checks `.category` first, uses `.else([])` for `OUT_OF_BOUNDS`, and `.panic(failed.category)` for unhandled failures: panic with the category itself since a custom user message is never read once the program panics.
+- `docs/struct.md` / `docs/list.md`: removed redundant `.get(x, fallback).else(fallback)`: `get` already takes a fallback; use one or the other.
 
 ## 2. Repo hygiene (completed)
 

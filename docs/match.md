@@ -1,21 +1,21 @@
 # Match
 
-`match(value, patterns)` — exhaustive pattern matching for `Option` and `Result`.
-`matchAll(value, patterns)` — matching for literals and `Atom`s (always needs a `_` fallback).
+`match(value, patterns)`: exhaustive pattern matching for `Option` and `Result`.
+`matchAll(value, patterns)`: matching for literals and `Atom`s (always needs a `_` fallback).
 
 ```ts
 // Signature
 match<T, E, R>(value: Result<T, E>, patterns: { Ok: (v: Ok<T>) => R; Err: (e: Err<E>) => R }): R;
 match<T, R>(value: Option<T>, patterns: { Some: (v: Some<T>) => R; None: () => R }): R;
 
-/* matchAll — strings, numbers, booleans, Atoms; `_` fallback is required */
+/* matchAll: strings, numbers, booleans, Atoms; `_` fallback is required */
 matchAll<T extends string | number | boolean | Atom, R>(
   value: T,
   patterns: { [key in T]?: (v: T) => R; _: () => R },
 ): R;
 ```
 
-`match` requires both `Ok` and `Err` (or `Some` and `None`) handlers — TypeScript enforces
+`match` requires both `Ok` and `Err` (or `Some` and `None`) handlers: TypeScript enforces
 exhaustiveness, so adding a new variant forces every call site to handle it. Handlers receive the
 original wrapper, so use `value.value` or `error.error`.
 
@@ -85,7 +85,7 @@ println(message); // "That page is out of range."
 ```
 
 For anything you can't handle with a fallback, check `.category` first
-and panic with the category itself — once you panic, a custom user
+and panic with the category itself, once you panic, a custom user
 message is never read. See [list](list.md#failures-and-categories).
 
 `matchAll` needs the `_` fallback since there's no finite set of category
@@ -151,7 +151,7 @@ care about is whether the end result is usable.
 ## Technical Notes
 
 - `match` requires both cases. Miss one and it throws
-  `"Non-exhaustive match — missing handler for '<type>'"`.
+  `"Non-exhaustive match: missing handler for '<type>'"`.
 - `matchAll` requires `_`. It's the fallback, not an optional nicety.
 - `matchAll` uses an `Atom`'s description as its key. A plain symbol works too.
 - `matchAll` accepts strings, numbers, booleans, and symbols. Objects, arrays, and functions throw.

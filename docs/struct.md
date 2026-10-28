@@ -1,30 +1,30 @@
 # struct
 
-`struct(input)` — safe record access, shaping, merging, and grouping. Every operation returns a
+`struct(input)`: safe record access, shaping, merging, and grouping. Every operation returns a
 fallible result you finish with `.else(...)` or `.panic(...)`.
 
 ```ts
 // Signature
 struct<T>(input: T | Ok<T>): StructChain<T>;
 
-/* Record operations — all return Fallible unless noted */
-chain.get(path);                          // Fallible<T[path]> — known top-level key keeps its type
-chain.get(path, fallback);                // Fallible<T[path] | U> — fallback on missing path
-chain.pick(...keys);                      // StructChain<Pick<T, K>> — keeps named keys
-chain.omit(...keys);                      // StructChain<Omit<T, K>> — drops named keys
-chain.merge(source);                      // StructChain<T> — deep merge, never mutates input
-chain.count();                            // Fallible<number> — own enumerable top-level keys
-chain.countBy(selector);                  // Fallible<Record<string, number>> — rows per key
-chain.keyBy(selector);                    // Fallible<Record<string, row>> — one row per key
-chain.prune(predicate?);                  // StructChain<T> — drops Slang-falsy values
+/* Record operations: all return Fallible unless noted */
+chain.get(path);                          // Fallible<T[path]>: known top-level key keeps its type
+chain.get(path, fallback);                // Fallible<T[path] | U>: fallback on missing path
+chain.pick(...keys);                      // StructChain<Pick<T, K>>: keeps named keys
+chain.omit(...keys);                      // StructChain<Omit<T, K>>: drops named keys
+chain.merge(source);                      // StructChain<T>: deep merge, never mutates input
+chain.count();                            // Fallible<number>: own enumerable top-level keys
+chain.countBy(selector);                  // Fallible<Record<string, number>>: rows per key
+chain.keyBy(selector);                    // Fallible<Record<string, row>>: one row per key
+chain.prune(predicate?);                  // StructChain<T>: drops Slang-falsy values
 
 /* Finish */
 chain.unwrap().else(fallback);    // value or fallback on failure
 chain.panic(message?);            // throws on failure (message defaults to the error)
-chain.category;                   // SlangErrorCategory | undefined — the failure category
+chain.category;                   // SlangErrorCategory | undefined: the failure category
 ```
 
-`get` already takes a fallback — use either `get(path, fallback)` **or** `get(path).else(...)`, not both.
+`get` already takes a fallback: use either `get(path, fallback)` **or** `get(path).else(...)`, not both.
 A string path is one literal key (not split on dots); use an array path for nesting. Missing paths
 fail with `OUT_OF_BOUNDS`; wrong shape for the operation fails with `INVALID_INPUT`.
 
@@ -170,14 +170,15 @@ you pass.
 
 ## Technical Notes
 
-- A string path is one key. `get("server.port")` reads a literal key called `"server.port"` — it
-  doesn't split on dots. Use an array like `get(["server", "port"])` to go two levels deep.
-- `prune` drops Slang-falsy values by default (`null`, `undefined`, `""`, `NaN`, `Infinity`,
+- **`prune`** drops Slang-falsy values by default (`null`, `undefined`, `""`, `NaN`, `Infinity`,
   `-Infinity`) but keeps `0` and `false`. Its predicate receives `(value, key)` and returns `true`
   to keep a value. It needs a plain object (a record).
-- A wrong shape for the operation — like calling `countBy` on a single record — fails with
-  `INVALID_INPUT`. A missing `get` path fails with `OUT_OF_BOUNDS`. Once a chain fails, later steps
-  don't run, and the failure category survives so you can check `.category`.
+- **Wrong shape = `INVALID_INPUT`**. Calling `countBy` on a single record, or `get` on an array,
+  fails with `INVALID_INPUT`. Record operations need a record; collection operations need an array.
+- **Missing `get` path = `OUT_OF_BOUNDS`**. If the path doesn't exist in the record, the chain fails
+  with `OUT_OF_BOUNDS` unless you supply a fallback.
+- **Once a chain fails, later steps don't run.** The first failure wins, and its category survives so
+  you can check `.category` later.
 - A known top-level key keeps its type. A nested, unknown, or array path is `unknown`. A fallback
   on a known top-level key widens the result to the value type or the fallback type.
 - `merge` skips `__proto__`, `constructor`, and `prototype` at every level. Nested objects the

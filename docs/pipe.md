@@ -1,6 +1,6 @@
 # Pipe
 
-`pipe(value, ...fns)` — runs `Result`-returning steps in order, stopping at the first failure.
+`pipe(value, ...fns)`: runs `Result`-returning steps in order, stopping at the first failure.
 
 ```ts
 // Signature
@@ -11,7 +11,7 @@ pipe.run(options?);   // Promise<Result<final, string>>
 ```
 
 Each function receives the previous `Result` and returns a `Result`. By default the pipeline stops
-at the first `Err`. Options: `onEach`, `onSuccess`, `onError`, `allowErrors` (default `false` — stop
+at the first `Err`. Options: `onEach`, `onSuccess`, `onError`, `allowErrors` (default `false`: stop
 at the first `Err`). `run()` returns a promise, so await it.
 
 ## What it is

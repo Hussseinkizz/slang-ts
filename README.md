@@ -39,7 +39,7 @@ if (result.isOk) {
 }
 ```
 
-`println` is optional — it's a small development logger.
+`println` is optional: it's a small development logger.
 
 ## Imports
 
@@ -168,7 +168,7 @@ Full detail: [SafeTry][safe-try] and [Result][result].
 ### Call an API with a timeout and retries: SuperPromise
 
 Your function gets an `AbortSignal`. `timeout` aborts an attempt, `retry` runs it again after an
-ordinary failure, and you get back `Ok` or `Err` — so no `try`/`catch` around the await.
+ordinary failure, and you get back `Ok` or `Err`: so no `try`/`catch` around the await.
 
 ```ts
 import { superPromise, println } from "slang-ts";

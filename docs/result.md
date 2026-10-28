@@ -1,6 +1,6 @@
 # Result
 
-`Result<T, E>` — an operation that either succeeds with `Ok<T>` or fails with `Err<E>`.
+`Result<T, E>`: an operation that either succeeds with `Ok<T>` or fails with `Err<E>`.
 
 ```ts
 // Signature
@@ -8,48 +8,39 @@ type Result<T, E> = Ok<T> | Err<E>;
 
 /* Constructors */
 Ok<T>(value: T, message?: string);   // success; optional user-facing message
-Err<E>(error: string, raw?: unknown); // failure; optional diagnostic cause
+Err<E>(error: string, raw?: unknown); // failure; error message, optional diagnostic cause
 
-/* Methods — all return T unless noted */
-result.unwrap().else(fallback);       // T — the Ok value, or the fallback for Err
-result.panic(message?);               // T — throws on Err (message defaults to the error)
+/* Methods: all return T unless noted */
+result.unwrap().else(fallback);       // T: the Ok value, or the fallback for Err
+result.panic(message?);               // T: throws on Err (message defaults to the error)
 result.andThen(fn);                   // transforms Ok, skips Err; a returned Result is flattened
-result.expect(msg?);                  // T — throws on Err (msg defaults to the error)
+result.expect(msg?);                  // T: throws on Err (msg defaults to the error)
 result.iterate();                     // only on Ok; lazy collection pipeline
 ```
 
-`Ok(value, message?)` builds a success. `message` is optional and only shows up when present —
-results without one have no `message` property. `Err(error, raw?)` builds a failure; `error` is the
-human-readable message, and the optional `raw` is a non-enumerable diagnostic cause that never
-leaks into `JSON.stringify`, spread, or `Object.keys`.
+`Ok(value, message?)` builds a success. `message` is optional: results without one have no `message` property.
+`Err(error, raw?)` builds a failure. `error` is the human-readable message. The optional `raw` is a
+non-enumerable diagnostic cause that never leaks into `JSON.stringify`, spread, or `Object.keys`.
 
-A `Result` never nests inside another `Result` — `Ok(Ok(x))` and `Ok(Err(x))` won't compile.
+A `Result` never nests inside another `Result`: `Ok(Ok(x))` and `Ok(Err(x))` won't compile.
 
 ## What it is
 
 A `Result` carries either a value or a human-readable error. That way a failure can travel through
 normal code instead of getting thrown past the function that actually understands it.
 
-```ts
-type Result<T, E> = Ok<T> | Err<E>;
-```
+I use `Result` when a function can fail in ways I expect: like validation, a missing record, or a
+rejected request: and I want the caller to deal with the failure explicitly.
 
-`Ok` can carry a message too:
-
-```ts
-const saved = Ok({ id: "123" }, "Profile saved");
-if (saved.isOk) println(saved.message); // "Profile saved"
-```
+When the failure is a programming error I never intend to recover from, I use `panic` or `expect`
+instead.
 
 ## When to use it
 
 - A function has failure paths you expect: validation, a missing record, a rejected request.
 - You want the caller to deal with the failure explicitly.
 - You're composing steps and want to stop at the first failure.
-- You want to keep a diagnostic cause around without putting it in the message the user sees.
-
-Use `Result` for failures you expect and can recover from. When the failure is a programming error
-you never intend to recover from, use [panic](panic.md) or `expect()`.
+- You want to keep a diagnostic cause around without putting it in the error message.
 
 ## How to use it
 
@@ -134,8 +125,7 @@ const result = await Ok(5).andThen(async (x) => await loadValue(x));
 
 ### Raw cause
 
-`Err(error, raw?)` keeps the original cause on a non-enumerable `.raw`. Users see the clean message;
-your logs can still get at the cause.
+`Err(error, raw?)` keeps the original cause on a non-enumerable `.raw`.
 
 ```ts
 const driverError = new Error("connection reset");

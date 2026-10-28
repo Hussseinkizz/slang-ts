@@ -1,21 +1,21 @@
 # taskGroup
 
-`taskGroup(name, options?)` — a shared concurrency limit and start spacing for tasks and runners.
+`taskGroup(name, options?)`: a shared concurrency limit and start spacing for tasks and runners.
 
 ```ts
 // Signature
 taskGroup(name: string, options?: { concurrency?: number; throttle?: number }): TaskGroup;
 
 /* Group methods */
-group.acquire();   // Promise<release> — waits for a free slot, returns a release callback
+group.acquire();   // Promise<release>: waits for a free slot, returns a release callback
 
 /* Options */
-{ concurrency?: number }  — max tasks active at once (default unlimited, positive integer)
-{ throttle?: number }     — min ms between starts (default 0, nonnegative integer)
+{ concurrency?: number } : max tasks active at once (default unlimited, positive integer)
+{ throttle?: number }    : min ms between starts (default 0, nonnegative integer)
 ```
 
 Every task that references the same group shares that limit. A retry needs a new slot and goes back
-through the queue. The group manages execution, not whether your work runs twice — no deduplication,
+through the queue. The group manages execution, not whether your work runs twice: no deduplication,
 no retrying for you, no cancelling a running task to make room.
 
 ## What it is

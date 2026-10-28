@@ -1,6 +1,6 @@
 # SafeTry
 
-`safeTry(fn, options?)` — runs a sync or async function and turns all failures into one `Err`.
+`safeTry(fn, options?)`: runs a sync or async function and turns all failures into one `Err`.
 It unwraps nested Slang wrappers (`Result`, `Option`, `Atom`) into a single `Result`.
 
 ```ts
@@ -9,8 +9,8 @@ safeTry<T>(fn: () => T | Promise<T>, options?: SafeTryOptions): Promise<Result<S
 
 /* Options */
 { throw?: boolean; collectValues?: boolean }
-/*   throw?: true — re-throws thrown errors instead of capturing them (returned Err still comes back normally)
-   collectValues?: true — records every unwrapped layer and failure on result.raw as { errors, values } */
+/*   throw?: true: re-throws thrown errors instead of capturing them (returned Err still comes back normally)
+   collectValues?: true: records every unwrapped layer and failure on result.raw as { errors, values } */
 ```
 
 The callback can return anything: a plain value, an `Ok`/`Err`, a `Some`/`None`, an `Atom`, a
@@ -21,7 +21,7 @@ returns `Promise<Result<value, string>>`.
 returned `Err` still comes back normally. If wrappers point back to each other, you get
 `Err("Cannot resolve a circular value")`, even with `{ throw: true }`.
 
-Always `await` it — you get a promise even when the callback is synchronous.
+Always `await` it: you get a promise even when the callback is synchronous.
 
 ## What it is
 

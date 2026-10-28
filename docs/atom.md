@@ -1,19 +1,19 @@
 # Atom
 
-`atom(name)` — a unique symbol with a readable description. Two atoms with the same name are not
+`atom(name)`: a unique symbol with a readable description. Two atoms with the same name are not
 equal.
 
 ```ts
 // Signature
 atom<T extends string>(name: T): Atom<T> & AtomMethods<T>;
 
-/* Atom — branded symbol */
+/* Atom: branded symbol */
 atom.description;   // the name (readable in logs and type hints)
 atom.andThen(fn);   // transforms description, returns new Atom; sync only
-atom.to(target);    // "option" | "result" — Some(name) | Ok(name)
+atom.to(target);    // "option" | "result": Some(name) | Ok(name)
 ```
 
-Atoms earn their place when identity actually matters — state names, event keys, and constants
+Atoms earn their place when identity actually matters: state names, event keys, and constants
 where an accidental collision would be a bug. `matchAll` matches atoms by description.
 
 ## What it is

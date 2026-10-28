@@ -1,6 +1,6 @@
 # Zip
 
-`zip(inputs, options?)` — combines parallel collections into rows; `zipWith` transforms each row;
+`zip(inputs, options?)`: combines parallel collections into rows; `zipWith` transforms each row;
 `unzip` reverses `zip`.
 
 ```ts

@@ -1,13 +1,13 @@
 # Signal
 
-`createSignal()` — a trigger that fires once and stays fired. Fire it when you're ready, and
+`createSignal()`: a trigger that fires once and stays fired. Fire it when you're ready, and
 anything waiting on it reacts.
 
 ```ts
 // Signature
 createSignal(): Signal;
 
-/* Signal — an AbortSignal plus fire() */
+/* Signal: an AbortSignal plus fire() */
 signal.fire();      // fires once; later calls do nothing
 signal.aborted;     // true after firing
 signal.addEventListener("abort", listener); // works like a native AbortSignal

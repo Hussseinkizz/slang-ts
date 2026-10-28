@@ -1,6 +1,6 @@
 # slang-ts agent skill
 
-This skill tells AI agents how to work with slang-ts — its APIs, patterns, and conventions — so agents can write correct TypeScript against it.
+This skill tells AI agents how to work with slang-ts: its APIs, patterns, and conventions: so agents can write correct TypeScript against it.
 
 ## What slang-ts is
 
@@ -40,7 +40,7 @@ Branch with `if (result.isOk) { ... } else { ... }`. Finish chains with `.unwrap
 
 ### match / matchAll
 
-`match(result, { Ok: ..., Err: ... })` is exhaustive — TypeScript requires both cases.
+`match(result, { Ok: ..., Err: ... })` is exhaustive: TypeScript requires both cases.
 
 `matchAll` is for strings, numbers, booleans, symbols, and `Atom`s. It always needs a `_` fallback since there's no finite set of cases.
 
@@ -64,12 +64,12 @@ if (failed.category === "OUT_OF_BOUNDS") {
 }
 ```
 
-- `get` already takes a fallback: `get(key, fallback)`. Do not pair `get(x, fallback)` with `.else(fallback)` — that's redundant.
+- `get` already takes a fallback: `get(key, fallback)`. Do not pair `get(x, fallback)` with `.else(fallback)`: that's redundant.
 - `.panic()` throws; once you panic, no custom user message is read afterward.
 
 ### list
 
-Strict indexed arrays with `get`, `take`, `skip`, `range`, `chunk`, `count`, `prune`. Bounds are strict — out-of-range fails instead of clamping.
+Strict indexed arrays with `get`, `take`, `skip`, `range`, `chunk`, `count`, `prune`. Bounds are strict: out-of-range fails instead of clamping.
 
 ```ts
 const page = list(users).range(start, end).else([]);
@@ -136,27 +136,27 @@ const task = superPromise(fetchUsers, { group: api });
 
 ### Signal / Channel
 
-`createSignal()` — a trigger that fires once (`fire()`), AbortSignal-compatible.
+`createSignal()`: a trigger that fires once (`fire()`), AbortSignal-compatible.
 
-`createChannel()` — in-process publish/subscribe. `subscribe(topic, handler)` returns an unsubscribe function.
+`createChannel()`: in-process publish/subscribe. `subscribe(topic, handler)` returns an unsubscribe function.
 
 ## Other utilities
 
-- `atom("name")` — unique symbol with a readable description; matches in `matchAll` by description.
-- `to` — convert between `Option`, `Atom`, `Result` (e.g. `option("ready").to("atom")`).
-- `pipe` — run `Result`-returning steps in order, stopping at the first failure.
-- `zip` / `zipWith` / `unzip` — combine parallel collections.
-- `memoized` — cache a function by argument identity.
-- `panic(message)` — throw immediately for unrecoverable states.
-- `println` — dev logging, silent in production unless `setEnvironment` routes it.
+- `atom("name")`: unique symbol with a readable description; matches in `matchAll` by description.
+- `to`: convert between `Option`, `Atom`, `Result` (e.g. `option("ready").to("atom")`).
+- `pipe`: run `Result`-returning steps in order, stopping at the first failure.
+- `zip` / `zipWith` / `unzip`: combine parallel collections.
+- `memoized`: cache a function by argument identity.
+- `panic(message)`: throw immediately for unrecoverable states.
+- `println`: dev logging, silent in production unless `setEnvironment` routes it.
 
 ## Conventions agents should follow
 
 - Named params in an object for multi-arg functions, not positional.
-- No classes — use functions and plain objects.
+- No classes: use functions and plain objects.
 - Error categories are strings (`.category`), not numeric codes. Never call them "error codes."
 - `get` accepts a fallback; don't chain `.else()` after a `get` that already has one.
-- `.panic()` throws — only for unrecoverable states. Use `Result` / `.else()` for expected failures.
+- `.panic()` throws: only for unrecoverable states. Use `Result` / `.else()` for expected failures.
 - Zero runtime dependencies; ESM only.
 
 ## Package contents

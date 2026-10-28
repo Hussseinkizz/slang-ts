@@ -1,23 +1,23 @@
 # sets
 
-`sets(input)` — membership and set operations over collections. Comparisons follow native `Set`
+`sets(input)`: membership and set operations over collections. Comparisons follow native `Set`
 rules: primitives by value, objects by identity.
 
 ```ts
 // Signature
 sets<T>(input: Iterable<T> | Set<T> | Map<unknown, T> | Record<string, unknown> | Ok<Iterable<T>>): SetsChain<T>;
 
-/* Membership and algebra — all return Fallible */
-chain.has(value);                  // Fallible<boolean> — is value a member? (false is success, not failure)
-chain.unique();                    // SetsChain<T> — fresh copy with duplicates removed
-chain.union(other);                // SetsChain<T> — members from both sides
-chain.intersection(other);         // SetsChain<T> — members present in both
-chain.difference(other);           // SetsChain<T> — left-side members not on the right
+/* Membership and algebra: all return Fallible */
+chain.has(value);                  // Fallible<boolean>: is value a member? (false is success, not failure)
+chain.unique();                    // SetsChain<T>: fresh copy with duplicates removed
+chain.union(other);                // SetsChain<T>: members from both sides
+chain.intersection(other);         // SetsChain<T>: members present in both
+chain.difference(other);           // SetsChain<T>: left-side members not on the right
 
 /* Finish */
 chain.unwrap().else(fallback);    // value or fallback on failure
 chain.panic(message?);            // throws on failure (message defaults to the error)
-chain.category;                   // SlangErrorCategory | undefined — INVALID_INPUT on failure
+chain.category;                   // SlangErrorCategory | undefined: INVALID_INPUT on failure
 ```
 
 Object input reads own enumerable keys only; values are ignored, so a `false` flag still
@@ -29,24 +29,6 @@ building the chain.
 Reach for `sets` when the question is "is this value a member?" or "what do these collections
 share?". The chain wraps a native `Set`, so comparison follows native `Set` rules: primitives by
 value, objects by identity. Duplicate values collapse into one member.
-
-The returned `SetsChain<T>` is a `Fallible<Set<T>>`:
-
-- `else(fallback)`: the value, or a fallback value/function. A function fallback receives the error.
-- `panic(message?)`: the value, or a thrown error. The message defaults to the failure message.
-- `category`: `INVALID_INPUT` on failure, or `undefined` on success.
-
-Supported input:
-
-- An array or any iterable: each yielded value is a member.
-- A `Set`: a copy of its members.
-- A `Map`: its keys only.
-- A string: its characters.
-- A plain object: its own enumerable keys.
-- A narrowed successful `Ok` holding any of the above.
-
-An `Err`, a number, `null`, `undefined`, or anything else unsupported fails with `INVALID_INPUT`.
-`sets` copies the input while it builds the chain.
 
 ## When to use it
 

@@ -1,6 +1,6 @@
 # Option
 
-`option(value)` — wraps a value that may or may not be there. You get `Some(value)` when usable,
+`option(value)`: wraps a value that may or may not be there. You get `Some(value)` when usable,
 `None` when it isn't.
 
 ```ts
@@ -13,19 +13,19 @@ option<T>(value: T | null | undefined | "" | NaN | Infinity | -Infinity): Option
    → None   for null, undefined, "", NaN, Infinity, -Infinity */
 
 /* Methods */
-option.unwrap().else(fallback);   // T — the inner value, or a truthy fallback for None
-option.expect(msg?);              // T — throws on None
+option.unwrap().else(fallback);   // T: the inner value, or a truthy fallback for None
+option.expect(msg?);              // T: throws on None
 option.andThen(fn);               // transforms Some, skips None; undefined keeps the original
-option.to(target);              // "atom" | "option" | "result" — convert between wrappers
+option.to(target);              // "atom" | "option" | "result": convert between wrappers
 ```
 
-`0` and `false` come back as `Some` — you usually set those on purpose, so they aren't treated as
+`0` and `false` come back as `Some`: you usually set those on purpose, so they aren't treated as
 missing. `None` has no `.value`; check `.isSome` / `.isNone` first, or use `.unwrap().else(...)`.
 
 ## What it is
 
-Option is a small, explicit way to say "maybe this value exists". Use it instead of passing `null`
-or `undefined` around and hoping every call site remembers to check.
+`Option` is a small, explicit way to say "maybe this value exists". I use it instead of passing
+`null` or `undefined` around and hoping every call site remembers to check.
 
 `option()` gives you `None` for these:
 
@@ -69,7 +69,7 @@ if (b.isNone) {
 
 ### Expect
 
-`expect()` gives you the `Some` value and throws on `None`. Use it when a missing value means
+`expect()` gives you the `Some` value, or throws on `None`. I use it when a missing value means
 something is actually broken.
 
 ```ts

@@ -1,6 +1,6 @@
 # SuperPromise
 
-`superPromise(fn, options?)` — one async operation with start, retry, timeout, and cancel controls.
+`superPromise(fn, options?)`: one async operation with start, retry, timeout, and cancel controls.
 Tasks end as `Ok` or `Err`, so you check the result instead of wrapping every await in `try`/`catch`.
 
 ```ts
@@ -9,24 +9,24 @@ superPromise<T>(fn: (signal: AbortSignal) => T | Promise<T> | Result<T, string>,
 
 /* Options */
 { defer, delay, timeout, retry, retryUntil, group }
-/*   defer?: AbortSignal   — wait for this signal before starting
-   delay?: number          — ms before first attempt (retries wait too)
-   timeout?: number        — ms before aborting an attempt (never retried)
-   retry?: number          — retries after first attempt (n + 1 total)
-   retryUntil?: { signal: AbortSignal, delay?: number } — retry until signal fires
-   group?: TaskGroup       — shared concurrency slot; a retry waits for a new slot */
+/*   defer?: AbortSignal  : wait for this signal before starting
+   delay?: number         : ms before first attempt (retries wait too)
+   timeout?: number       : ms before aborting an attempt (never retried)
+   retry?: number         : retries after first attempt (n + 1 total)
+   retryUntil?: { signal: AbortSignal, delay?: number }: retry until signal fires
+   group?: TaskGroup      : shared concurrency slot; a retry waits for a new slot */
 
-/* Task methods — never reject */
-task.done;          // AbortSignal — fires once when the task finishes
+/* Task methods: never reject */
+task.done;          // AbortSignal: fires once when the task finishes
 task.abort();       // ends with Err("Aborted")
 task.resolve(v);    // manual tasks only; first settlement wins
 task.reject(e);     // manual tasks only; first settlement wins
 task.tap(fn);       // observes a successful value without changing it
-task.then / .catch / .finally — promise-compatible, callback receives the Result
+task.then / .catch / .finally: promise-compatible, callback receives the Result
 ```
 
 Your function receives an `AbortSignal` and returns a value, a `Result`, or a promise of either. The
-task starts lazily — on first `await`, `.then()`, or a runner's `start()` — not at creation.
+task starts lazily: on first `await`, `.then()`, or a runner's `start()`, not at creation.
 
 ## What it is
 

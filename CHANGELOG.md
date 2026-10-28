@@ -1,11 +1,10 @@
 # Changelog
 
-Everything notable in `slang-ts`, grouped by area. No release diary — just what's here.
+Everything notable in `slang-ts`, grouped by area. No release diary: just what's here.
 
 ## Results and flow
 
-- `Ok(value, message?)` keeps an optional success message on the result, like text you want to show
-  the user. Results without one have no `message` property.
+- `Ok(value, message?)` keeps an optional success message on the result. Results without one have no `message` property.
 - `SafeTry` unwraps Option and Atom values into one result. A Result never nests inside another
   Result, and plain object properties and array elements stay unchanged.
 
