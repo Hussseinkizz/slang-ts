@@ -53,7 +53,7 @@ const failed = option(null).to("result");
 println("Result:", failed.type); // "Err"
 ```
 
-## Notes
+## Technical Notes
 
 - `Option` to `Atom` needs a `Some<string>`. `None` or a non-string `Some` throws.
 - `Option` to `Result`: `Some` becomes `Ok(value)`, and `None` becomes `Err("Value is None")`.

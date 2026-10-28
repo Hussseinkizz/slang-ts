@@ -55,7 +55,7 @@ setEnvironment({ printFn: (line) => appLogger.info(line.trimEnd()) });
 println("This goes to appLogger.info, even in production");
 ```
 
-## Notes
+## Technical Notes
 
 - `println` joins arguments with spaces and appends a newline.
 - In production mode it does nothing unless a `printFn` is set.

@@ -146,7 +146,7 @@ label("a");
 println(runs); // 2
 ```
 
-## Notes
+## Technical Notes
 
 - `undefined` is a valid cached result. The cache checks for the leaf explicitly, so it isn't
   mistaken for a miss.

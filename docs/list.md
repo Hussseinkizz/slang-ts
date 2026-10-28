@@ -169,7 +169,7 @@ Here are the categories:
 - `INVALID_RANGE`: two in-bounds range ends had `start > end`.
 - `INVALID_CHUNK_SIZE`: the chunk size wasn't a positive integer.
 
-## Notes
+## Technical Notes
 
 - Bounds are strict. `take(5)` on a two-item list fails instead of returning two items. Clamp first
   if you want a partial result.

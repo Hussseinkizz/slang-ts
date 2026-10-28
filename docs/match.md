@@ -148,7 +148,7 @@ Options([null, undefined, ""]);      // Err("No value!")
 Reach for it when values come from different functions with inconsistent return types, and all you
 care about is whether the end result is usable.
 
-## Notes
+## Technical Notes
 
 - `match` requires both cases. Miss one and it throws
   `"Non-exhaustive match — missing handler for '<type>'"`.

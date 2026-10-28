@@ -58,7 +58,7 @@ channel.when({
 `superPromise` takes signals for `defer` and `retryUntil`, and `channel.when` takes any compatible
 signal.
 
-## Notes
+## Technical Notes
 
 - Firing is one-way. You can't reset or reuse a signal.
 - Calling `fire()` again does nothing.

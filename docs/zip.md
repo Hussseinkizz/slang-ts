@@ -79,7 +79,7 @@ println(unzip(zipped));
 // [[1, 2, 3], [4, 5, 6]]
 ```
 
-## Notes
+## Technical Notes
 
 - By default, only arrays are accepted. `includeValues: true` adds `Set`s and objects.
 - Keep the inputs the same kind. `zip` doesn't check that they match, so mixing arrays and objects

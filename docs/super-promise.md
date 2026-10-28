@@ -150,7 +150,7 @@ await superPromise(loadUser).tap((user) => println(user.name)); // observe, do n
 | `retryUntil` | Keep retrying until the stop signal fires. Overrides `retry` and the top-level `delay`. |
 | `group` | Shared [taskGroup](task-group.md) slot. A retry waits for a new slot. |
 
-## Notes
+## Technical Notes
 
 - A task doesn't start until you use it (`await`, `.then()`, or a runner's `start()`). That lets
   you connect dependencies before anything runs.

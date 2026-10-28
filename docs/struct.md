@@ -168,10 +168,16 @@ println(name); // "Ada"
 `.else` takes a value or a function. `.panic` throws with the failure message, or with the message
 you pass.
 
-## Notes
+## Technical Notes
 
-- A string path is one key. Use an array for nesting. `get("server.port")` reads a literal
-  `"server.port"` key, not two levels.
+- A string path is one key. `get("server.port")` reads a literal key called `"server.port"` — it
+  doesn't split on dots. Use an array like `get(["server", "port"])` to go two levels deep.
+- `prune` drops Slang-falsy values by default (`null`, `undefined`, `""`, `NaN`, `Infinity`,
+  `-Infinity`) but keeps `0` and `false`. Its predicate receives `(value, key)` and returns `true`
+  to keep a value. It needs a plain object (a record).
+- A wrong shape for the operation — like calling `countBy` on a single record — fails with
+  `INVALID_INPUT`. A missing `get` path fails with `OUT_OF_BOUNDS`. Once a chain fails, later steps
+  don't run, and the failure category survives so you can check `.category`.
 - A known top-level key keeps its type. A nested, unknown, or array path is `unknown`. A fallback
   on a known top-level key widens the result to the value type or the fallback type.
 - `merge` skips `__proto__`, `constructor`, and `prototype` at every level. Nested objects the
@@ -179,10 +185,6 @@ you pass.
 - `count` counts own enumerable top-level keys. It doesn't recurse, and it won't accept an array.
 - `countBy` counts rows per stringified key. `keyBy` keeps the last row for a duplicate key. Both
   return plain objects; `__proto__` stays a data key.
-- `prune` drops Slang-falsy values by default and keeps `0` and `false`. Its predicate receives the
-  value and the key. It needs a record.
-- A wrong shape for the operation is `INVALID_INPUT`, and a missing `get` path is `OUT_OF_BOUNDS`.
-  Once a chain fails, later steps don't run, and the category survives.
 
 ## See also
 

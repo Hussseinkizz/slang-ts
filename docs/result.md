@@ -147,14 +147,14 @@ println(failed.raw);   // the original driver error
 
 `raw` doesn't show up in `JSON.stringify`, spread, or `Object.keys`.
 
-## Notes
+## Technical Notes
 
 - `Err` takes a string message. Keep it readable; put the technical cause in `.raw`.
 - A `Result` never nests inside another `Result`. `Ok(Ok(x))` and `Ok(Err(x))` won't compile.
 - `andThen` is the exception: a returned `Result` gets flattened. A returned `Result` whose own
   value is a `Result` panics.
-- `andThen` catches a thrown error and gives you `Err(message)`. Return `undefined` and you keep the
-  original `Ok`.
+- `andThen` catches a thrown error and gives you `Err(message)`. Return `undefined` and you keep
+  the original `Ok`.
 - `andThen` doesn't copy the original `Ok` message onto a new value, and `safeTry` returns a new
   `Ok` without it. Returning `undefined` keeps the original result.
 - Only a successful `Ok` exposes [iterate](iterate.md). Check `.isOk` first to narrow away a

@@ -41,7 +41,7 @@ const config = { apiKey: "" };
 if (!config.apiKey) panic("API key required");
 ```
 
-## Notes
+## Technical Notes
 
 - `panic` throws an `Error`, so an outer `try`/`catch` can catch it. That doesn't make it a
   recovery strategy.

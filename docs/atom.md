@@ -66,7 +66,7 @@ atom("ready").to("result");                    // Ok("ready")
 
 `andThen` transforms the description and gives you a new atom.
 
-## Notes
+## Technical Notes
 
 - `andThen` is sync only. Return a non-string or throw, and it panics.
 - Return `undefined` from `andThen` and you keep the original atom.

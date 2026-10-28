@@ -125,7 +125,7 @@ of the successful winners. If not enough runners succeed, the runner returns `Er
 parallel.abort(); // cancels all active children
 ```
 
-## Notes
+## Technical Notes
 
 - `race` needs `count >= 1`. If no runner succeeds, it returns `Err("All runners failed")`. If some
   succeed but fewer than `count`, it returns `Err("Not enough runners succeeded")`.

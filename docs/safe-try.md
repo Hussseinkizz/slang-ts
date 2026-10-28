@@ -162,7 +162,7 @@ await safeTry(() => {
 non-enumerable `.raw`, shaped `{ errors, values }`. That's diagnostic data for logs, not a
 formatted message for users.
 
-## Notes
+## Technical Notes
 
 - You always get a promise back. Forget the `await` and you have a promise, not an inspectable
   result.

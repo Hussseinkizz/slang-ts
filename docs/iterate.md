@@ -179,7 +179,7 @@ println(chain.toArray().category); // INVALID_INPUT
 
 An array or another re-iterable source can run the finishing method more than once.
 
-## Notes
+## Technical Notes
 
 - `map`, `filter`, and `flatMap` pass `(value, index)`. Indexes start at 0 and count the values
   arriving at that step, and `reduce` passes `(accumulator, value, index)`.

@@ -60,7 +60,7 @@ const result = await pipe(5, add(3), multiply(2)).run({
 });
 ```
 
-## Notes
+## Technical Notes
 
 - Every pipeline function has to return a `Result`. Anything else becomes
   `Err("Pipeline function must return a Result")`.

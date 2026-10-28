@@ -144,7 +144,7 @@ println(sets([member]).has({ id: 1 }).else(true)); // false
 Objects are compared by reference, so two objects with the same fields are different members.
 Strings, numbers, booleans, and `NaN` are compared by value; `NaN` matches `NaN`.
 
-## Notes
+## Technical Notes
 
 - `sets` copies the input. A `Set` or `Map` you pass in isn't changed, and later changes to it don't
   show up in the chain.

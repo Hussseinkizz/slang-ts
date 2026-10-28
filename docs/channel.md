@@ -55,7 +55,7 @@ channel.when({
 });
 ```
 
-## Notes
+## Technical Notes
 
 - `send` is synchronous. Subscribers run before `send` returns.
 - Topics are exact strings. There's no wildcard or hierarchy.

@@ -195,7 +195,7 @@ try {
 Returning `false` throws `Step key rejected: <key>`. A thrown error from `keyEvalFn` becomes an
 `Err(message)` instead, or the fallback when you asked for one. That difference matters.
 
-## Notes
+## Technical Notes
 
 - `maxHistory` defaults to 50 and must be a positive integer. Steps get dropped to keep the
   stored history at or below it.

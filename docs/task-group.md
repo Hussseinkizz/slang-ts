@@ -123,7 +123,7 @@ try {
 
 The group's `name` is just a label for debugging. Identity is the object itself, not the name.
 
-## Notes
+## Technical Notes
 
 - `throttle` only spaces starts. It never cancels a running task.
 - A retry needs a new slot, so a retried `SuperPromise` goes back through the group's queue.

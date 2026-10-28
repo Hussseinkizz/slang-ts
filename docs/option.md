@@ -110,7 +110,7 @@ Async callbacks work too:
 const data = await option(5).andThen(async (x) => await fetchData(x));
 ```
 
-## Notes
+## Technical Notes
 
 - `Some` is the truthy path, but Slang's idea of truthy isn't JavaScript's. `0` and `false` count
   as present; `""`, `NaN`, and the infinities don't.
